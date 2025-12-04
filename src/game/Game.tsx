@@ -6,28 +6,43 @@ import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import TextNarrator from "../textNarrator/TextNarrator";
 import { FiRotateCw } from 'react-icons/fi';
 import BackgroundMusic from "../backgroundMusic/BackgroundMusic";
+import { GoogleGenAI } from "@google/genai";
 
 interface GameProps {
   userToken: string;
+  gameType: string;
+  genreKey: string;
 }
 
-const Game: React.FC<GameProps> = ({ userToken }): React.ReactElement => {
+const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.ReactElement => {
 
-  const option1 = useRef(null);
-  const option2 = useRef(null);
-  const option3 = useRef(null);
-  const spinner = useRef(null);
-  const options = useRef(null);
-  const gameCarousel = useRef(null);
+  const option1 = useRef<HTMLButtonElement>(null);
+  const option2 = useRef<HTMLButtonElement>(null);
+  const option3 = useRef<HTMLButtonElement>(null);
+  const spinner = useRef<HTMLDivElement>(null);
+  const options = useRef<HTMLDivElement>(null);
+  const gameCarousel = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const { language } = useLanguage();
   const [voicesLoaded, setVoicesLoaded] = useState(false);
 
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [gameContent, setGameContent] = useState<string[]>([]);
-  const [actualContent, setActualContent] = useState<string>(null);
+  const [actualContent, setActualContent] = useState<string | null>(null);
 
-  const audioFile = process.env.PUBLIC_URL + '/music/fantasyMusic.mp3';
+  // Dynamic music selection based on genre
+  const getMusicFile = (genre: string) => {
+    switch (genre) {
+      case 'scifi': return process.env.PUBLIC_URL + '/music/scifiMusic.mp3';
+      case 'horror': return process.env.PUBLIC_URL + '/music/scifiMusic.mp3'; // Fallback or use specific if available
+      case 'superheroes': return process.env.PUBLIC_URL + '/music/scifiMusic.mp3'; // Fallback
+      case 'romance': return process.env.PUBLIC_URL + '/music/fantasyMusic.mp3'; // Fallback
+      case 'fantasy':
+      default: return process.env.PUBLIC_URL + '/music/fantasyMusic.mp3';
+    }
+  };
+
+  const audioFile = getMusicFile(genreKey);
 
   const updateVoices = () => {
     const availableVoices = window.speechSynthesis.getVoices();
@@ -42,33 +57,24 @@ const Game: React.FC<GameProps> = ({ userToken }): React.ReactElement => {
     updateVoices();
 
     return () => {
-      // Limpia el eventListener al desmontar el componente
       window.speechSynthesis.removeEventListener("voiceschanged", updateVoices);
     };
   }, []);
 
   const selectedVoice = voices.find((voice) => voice.lang.startsWith(language));
 
-  const getRandomType = () => {
-    const generos = [t("fantasy"), t("scifi"), t("horror")];
-    const index = Math.floor(Math.random() * generos.length);
-    return generos[index];
-  };
-
-  const [gameType, setGameType] = useState(getRandomType());
-
-  const [gameHistory, setGameHistory] = useState([
+  const [gameHistory, setGameHistory] = useState<any[]>([
     {
-      role: "system",
-      content: t("game_history_content", { gameType: gameType }),
+      role: "user", // Gemini uses 'user' and 'model' roles, but for history context we can adapt
+      parts: [{ text: t("game_history_content", { gameType: gameType }) }],
     },
   ]);
 
-
-
-  function toggleSpinner(visible) {
-    spinner.current.classList.toggle("hidden", !visible);
-    gameCarousel.current.classList.toggle("hidden", visible);
+  function toggleSpinner(visible: boolean) {
+    if (spinner.current && gameCarousel.current) {
+      spinner.current.classList.toggle("hidden", !visible);
+      gameCarousel.current.classList.toggle("hidden", visible);
+    }
   }
 
   function toggleOptions(visible: boolean) {
@@ -79,41 +85,32 @@ const Game: React.FC<GameProps> = ({ userToken }): React.ReactElement => {
     }
   }
 
-
-  function extractOptions(text) {
+  function extractOptions(text: string) {
     const lines = text.split('\n');
-    const options = [];
+    const extractedOptions: string[] = [];
     let newText = "";
 
     for (const line of lines) {
       const lowerCaseLine = line.toLowerCase();
-      if (lowerCaseLine.startsWith('opción') || lowerCaseLine.startsWith('Opción')) {
-        const colonIndex = line.indexOf(':');
-        if (colonIndex !== -1) {
-          const optionText = line.slice(colonIndex + 1).trim();
-          options.push(optionText);
-        }
-      } else if (/^\d+\./.test(lowerCaseLine)) {
-        const dotIndex = line.indexOf('.');
-        if (dotIndex !== -1) {
-          const optionText = line.slice(dotIndex + 1).trim();
-          options.push(optionText);
-        }
-      } else if (/^\d+\)/.test(lowerCaseLine)) {
-        const closeParenIndex = line.indexOf(')');
-        if (closeParenIndex !== -1) {
-          const optionText = line.slice(closeParenIndex + 1).trim();
-          options.push(optionText);
+      // Improved regex to catch 1. 2. 3. or 1) 2) 3) or Option 1: etc.
+      if (/^(\d+[\.\)]|opci[oó]n\s*\d+\:?)/i.test(lowerCaseLine)) {
+        // It's likely an option
+        const separatorIndex = line.search(/[\.\)\:]/);
+        if (separatorIndex !== -1) {
+          const optionText = line.slice(separatorIndex + 1).trim();
+          if (optionText) extractedOptions.push(optionText);
         }
       } else {
         newText += line + "\n";
       }
     }
-    console.log('Opciones extraídas:', options);
 
-    return { options, newText: newText.trim() };
+    // Fallback if regex fails but we have 3 distinct short lines at the end? 
+    // For now rely on the prompt instructions.
+
+    console.log('Opciones extraídas:', extractedOptions);
+    return { options: extractedOptions, newText: newText.trim() };
   }
-
 
   async function startGame() {
     toggleSpinner(true);
@@ -121,13 +118,11 @@ const Game: React.FC<GameProps> = ({ userToken }): React.ReactElement => {
     setActualContent(null);
 
     const introPrompt = t("intro_prompt", { gameType: gameType });
-    const introText = await fetchChatGPTResponse(introPrompt, false);
-    setGameHistory((prevHistory) =>
-      prevHistory.concat(
-        { role: "user", content: introPrompt },
-        { role: "assistant", content: introText }
-      )
-    );
+    // Update history with initial prompt
+    setGameHistory(prev => [...prev, { role: "user", parts: [{ text: introPrompt }] }]);
+    const introText = await fetchGeminiResponse(introPrompt);
+    // Update history with model response
+    setGameHistory(prev => [...prev, { role: "model", parts: [{ text: introText }] }]);
 
     const { options: introOptions, newText } = extractOptions(introText);
     setGameContent((prev) => [...prev, newText]);
@@ -142,124 +137,114 @@ const Game: React.FC<GameProps> = ({ userToken }): React.ReactElement => {
     } else {
       setActualContent(newText);
     }
-    for (let i = 0; i < 3; i++) {
-      const optionButton = [option1, option2, option3][i].current;
-      if (introOptions[i]) {
-        optionButton.textContent = introOptions[i];
-      } else {
-        optionButton.textContent = `Opción ${i + 1}`;
-      }
-      optionButton.disabled = false;
-    }
+
+    updateOptionButtons(introOptions);
 
     toggleSpinner(false);
     toggleOptions(true);
   }
 
-  async function sendChoice(choice) {
+  function updateOptionButtons(currentOptions: string[]) {
+    const buttons = [option1, option2, option3];
+    for (let i = 0; i < 3; i++) {
+      const btn = buttons[i].current;
+      if (btn) {
+        if (currentOptions[i]) {
+          btn.textContent = currentOptions[i];
+          btn.disabled = false;
+        } else {
+          btn.textContent = `Opción ${i + 1}`;
+          btn.disabled = true; // Disable if no option found
+        }
+      }
+    }
+  }
+
+  async function sendChoice(choiceIndex: number) {
     toggleOptions(false);
     toggleSpinner(true);
     setActualContent(null);
 
-    const prompt = `Elegiste la opción ${choice}. ¿Qué sucede a continuación?`;
+    // Get the text of the chosen option
+    const buttons = [option1, option2, option3];
+    const choiceText = buttons[choiceIndex - 1].current?.textContent || `Option ${choiceIndex}`;
 
-    const response = await fetchChatGPTResponse(prompt);
+    const prompt = `I choose option ${choiceIndex}: ${choiceText}. What happens next?`;
+
+    // Update history with user choice
+    setGameHistory(prev => [...prev, { role: "user", parts: [{ text: prompt }] }]);
+
+    const response = await fetchGeminiResponse(prompt);
+
+    // Update history with model response
+    setGameHistory(prev => [...prev, { role: "model", parts: [{ text: response }] }]);
 
     const { options: responseOptions, newText } = extractOptions(response);
 
-    if (responseOptions.length === 3) {
-      option1.current.textContent = responseOptions[0];
-      option2.current.textContent = responseOptions[1];
-      option3.current.textContent = responseOptions[2];
-    } else {
-      console.error('No se encontraron exactamente 3 opciones en la respuesta de ChatGPT');
-    }
+    updateOptionButtons(responseOptions);
 
     setGameContent((prev) => [...prev, newText]);
     setActualContent(newText);
 
-    setGameHistory((prevHistory) =>
-      prevHistory.concat(
-        { role: "user", content: prompt },
-        { role: "assistant", content: response }
-      )
-    );
     toggleSpinner(false);
 
-    if (response.toLowerCase().includes("fin de la aventura")) {
-      setGameContent((prev) => [...prev, `<p>Fin del juego. Reinicia para jugar de nuevo.</p>`]);
-      option1.current.disabled = true;
-      option2.current.disabled = true;
-      option3.current.disabled = true;
+    if (response.toLowerCase().includes(t("game_end")) || response.toLowerCase().includes("fin de la aventura")) {
+      setGameContent((prev) => [...prev, `<p>${t("game_restart")}</p>`]);
+      if (option1.current) option1.current.disabled = true;
+      if (option2.current) option2.current.disabled = true;
+      if (option3.current) option3.current.disabled = true;
     } else {
       toggleOptions(true);
     }
   }
 
-  async function fetchChatGPTResponse(prompt, addToHistory = true) {
-    const token = userToken;
+  // Gemini API Integration
+  const [genAIClient, setGenAIClient] = useState<any>(null);
 
-    // const token = "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";
-    const model = "gpt-3.5-turbo";
-    const messages = gameHistory.concat({ role: "user", content: prompt });
-    const url = "https://api.openai.com/v1/chat/completions";
-
-    const requestOptions = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: 2000,
-        temperature: 0.8,
-        top_p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0,
-      }),
-    };
+  async function fetchGeminiResponse(prompt: string): Promise<string> {
     try {
-      // const data = { "id": "chatcmpl-7Dty0ia7TwnFjzH0qS5tYqp4vev1A", "object": "chat.completion", "created": 1683547756, "model": "gpt-3.5-turbo-0301", "usage": { "prompt_tokens": 155, "completion_tokens": 112, "total_tokens": 267 }, "choices": [{ "message": { "role": "assistant", "content": "Te encuentras en una nave espacial en el año 2050, eres parte de una misión para explorar nuevos planetas y encontrar posibles lugares donde puedan vivir los humanos. De pronto, la nave empieza a sacudirse y escuchas una alarma sonar. Tienes que tomar una decisión:\n\n1) Ir a investigar el origen de la alarma\n2) Pedir ayuda al equipo\n3) Permanecer en tu lugar y esperar a que alguien te diga qué hacer" }, "finish_reason": "stop", "index": 0 }] }
-
-      // Uncomment this to make the proper call
-      const response = await fetch(url, requestOptions);
-      if (response.status === 429) {
-        console.error("Error 429: Límite de velocidad alcanzado");
-        return "Lo siento, se ha alcanzado el límite de solicitudes permitidas en este momento. Por favor, intenta de nuevo más tarde.";
-      }
-      const data = await response.json();
-      const output = data.choices[0].message.content.trim();
-
-      if (addToHistory) {
-        setGameHistory((prevHistory) =>
-          prevHistory.concat({ role: "assistant", content: output })
-        );
+      let client = genAIClient;
+      if (!client) {
+        client = new GoogleGenAI({ apiKey: userToken });
+        setGenAIClient(client);
       }
 
-      return output;
+      // Construct prompt from history
+      let fullPrompt = "";
+      gameHistory.forEach(msg => {
+        const text = msg.parts ? msg.parts[0].text : "";
+        fullPrompt += `${msg.role === 'user' ? 'User' : 'Model'}: ${text}\n`;
+      });
+      fullPrompt += `User: ${prompt}\nModel:`;
+
+      const response = await client.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: fullPrompt,
+        config: {
+          temperature: 0.7,
+        }
+      });
+
+      const text = response.text;
+      return text || "No response text";
+
     } catch (error) {
-      console.error("Error al obtener respuesta de ChatGPT:", error);
-      return "Lo siento, hubo un problema al procesar tu solicitud. Por favor, intenta de nuevo más tarde.";
+      console.error("Error fetching from Gemini:", error);
+      return "Error: Could not connect to the AI. Please check your API key and try again.";
     }
   }
 
   function resetGame() {
-    window.speechSynthesis.cancel(); // Detiene cualquier habla en curso
+    window.speechSynthesis.cancel();
     toggleOptions(false);
     setGameContent([]);
-    setGameType(getRandomType());
+    setGenAIClient(null); // Reset client to force re-initialization
     setGameHistory([
       {
-        role: "system",
-        content: t("game_history_content", { gameType: gameType }),
+        role: "user",
+        parts: [{ text: t("game_history_content", { gameType: gameType }) }],
       },
     ]);
-
-    option1.current.disabled = false;
-    option2.current.disabled = false;
-    option3.current.disabled = false;
     startGame();
   }
 
@@ -272,10 +257,11 @@ const Game: React.FC<GameProps> = ({ userToken }): React.ReactElement => {
   }, [voicesLoaded]);
 
   const initializeGame = () => {
-    if (voicesLoaded) {
+    if (voicesLoaded && !genAIClient) { // Only start if voices are loaded and client is not yet initialized
       startGame();
     }
   };
+
   return (
     <>
       <div className="tools-buttons-container">
@@ -298,7 +284,7 @@ const Game: React.FC<GameProps> = ({ userToken }): React.ReactElement => {
         >
           {gameContent.map((item, index) => (
             <div id="game-content" key={index}>
-              <p>{item}</p>
+              <p style={{ whiteSpace: 'pre-line' }}>{item}</p>
             </div>
           ))}
         </Carousel>
@@ -308,7 +294,6 @@ const Game: React.FC<GameProps> = ({ userToken }): React.ReactElement => {
         <button ref={option1} onClick={() => sendChoice(1)}>Opción 1</button>
         <button ref={option2} onClick={() => sendChoice(2)}>Opción 2</button>
         <button ref={option3} onClick={() => sendChoice(3)}>Opción 3</button>
-        {/* <button onClick={resetGame}>{t('reset')}</button> */}
       </div>
     </>
   );
