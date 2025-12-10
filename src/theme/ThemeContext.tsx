@@ -1,25 +1,26 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { themes, AdventureTheme } from './themes';
+import { AdventureGenre } from '../resources/availableTypes';
 
 interface ThemeContextType {
-    theme: string;
-    setTheme: (theme: string) => void;
+    theme: AdventureGenre;
+    setTheme: (theme: AdventureGenre) => void;
     currentTheme: AdventureTheme;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-    theme: 'fantasy',
+    theme: AdventureGenre.FANTASY,
     setTheme: () => { },
-    currentTheme: themes['fantasy']
+    currentTheme: themes[AdventureGenre.FANTASY]
 });
 
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-    const [theme, setTheme] = useState('fantasy');
+    const [theme, setTheme] = useState<AdventureGenre>(AdventureGenre.FANTASY);
 
     useEffect(() => {
-        const activeTheme = themes[theme] || themes['fantasy'];
+        const activeTheme = themes[theme] || themes[AdventureGenre.FANTASY];
         const root = document.documentElement;
 
         root.style.setProperty('--primary-color', activeTheme.primaryColor);
@@ -34,7 +35,7 @@ export const ThemeProvider: React.FC<React.PropsWithChildren<{}>> = ({ children 
     }, [theme]);
 
     return (
-        <ThemeContext.Provider value={{ theme, setTheme, currentTheme: themes[theme] || themes['fantasy'] }}>
+        <ThemeContext.Provider value={{ theme, setTheme, currentTheme: themes[theme] || themes[AdventureGenre.FANTASY] }}>
             {children}
         </ThemeContext.Provider>
     );

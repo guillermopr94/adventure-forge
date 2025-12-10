@@ -6,24 +6,8 @@ import { useTheme } from "../theme/ThemeContext";
 import "./StartScreen.css";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
-import scifiIcon from '../assets/adventure-icons/scifi.png';
-import superheroesIcon from '../assets/adventure-icons/superheroes.png';
-import fantasyIcon from '../assets/adventure-icons/fantasy.png';
-import romanceIcon from '../assets/adventure-icons/romance.png';
-import horrorIcon from '../assets/adventure-icons/horror.png';
+import { ADVENTURE_TYPES } from "../resources/availableTypes";
 
-interface GenreConfig {
-    id: string;
-    icon: string;
-}
-
-const GENRES: GenreConfig[] = [
-    { id: 'fantasy', icon: fantasyIcon },
-    { id: 'scifi', icon: scifiIcon },
-    { id: 'horror', icon: horrorIcon },
-    { id: 'superheroes', icon: superheroesIcon },
-    { id: 'romance', icon: romanceIcon },
-];
 
 const StartScreen = (): React.ReactElement => {
     const [step, setStep] = useState<'apikey' | 'selection' | 'game'>('apikey');
@@ -35,7 +19,7 @@ const StartScreen = (): React.ReactElement => {
 
     useEffect(() => {
         // Initialize theme based on current index
-        setTheme(GENRES[currentGenreIndex].id);
+        setTheme(ADVENTURE_TYPES[currentGenreIndex].id);
     }, [currentGenreIndex, setTheme]);
 
     function handleTokenChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -55,9 +39,9 @@ const StartScreen = (): React.ReactElement => {
 
     function rotateGenre(direction: 'prev' | 'next') {
         if (direction === 'prev') {
-            setCurrentGenreIndex((prev) => (prev === 0 ? GENRES.length - 1 : prev - 1));
+            setCurrentGenreIndex((prev) => (prev === 0 ? ADVENTURE_TYPES.length - 1 : prev - 1));
         } else {
-            setCurrentGenreIndex((prev) => (prev === GENRES.length - 1 ? 0 : prev + 1));
+            setCurrentGenreIndex((prev) => (prev === ADVENTURE_TYPES.length - 1 ? 0 : prev + 1));
         }
     }
 
@@ -65,7 +49,7 @@ const StartScreen = (): React.ReactElement => {
     window.utterances = [];
     speechSynthesis.cancel();
 
-    const selectedGenre = GENRES[currentGenreIndex];
+    const selectedGenre = ADVENTURE_TYPES[currentGenreIndex];
 
     return (
         <div className="App">

@@ -8,6 +8,7 @@ import { FiRotateCw } from 'react-icons/fi';
 import BackgroundMusic from "../backgroundMusic/BackgroundMusic";
 import { GoogleGenAI } from "@google/genai";
 import Typewriter from "./Typewriter";
+import { getAdventureType } from "../resources/availableTypes";
 
 interface GameProps {
   userToken: string;
@@ -34,19 +35,7 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [currentAudioDuration, setCurrentAudioDuration] = useState<number>(0);
 
-  // Dynamic music selection based on genre
-  const getMusicFile = (genre: string) => {
-    switch (genre) {
-      case 'scifi': return process.env.PUBLIC_URL + '/music/scifi.m4a';
-      case 'horror': return process.env.PUBLIC_URL + '/music/horror.m4a';
-      case 'superheroes': return process.env.PUBLIC_URL + '/music/superheroes.m4a';
-      case 'romance': return process.env.PUBLIC_URL + '/music/romance.m4a';
-      case 'fantasy':
-      default: return process.env.PUBLIC_URL + '/music/fantasy.m4a';
-    }
-  };
-
-  const audioFile = getMusicFile(genreKey);
+  const audioFile = getAdventureType(genreKey).music;
 
   const updateVoices = () => {
     const availableVoices = window.speechSynthesis.getVoices();

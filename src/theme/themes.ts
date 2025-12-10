@@ -1,3 +1,5 @@
+import { AdventureGenre } from '../resources/availableTypes';
+
 export interface AdventureTheme {
     primaryColor: string;
     secondaryColor: string;
@@ -9,8 +11,8 @@ export interface AdventureTheme {
     buttonGradient: string;
 }
 
-export const themes: { [key: string]: AdventureTheme } = {
-    fantasy: {
+export const themes: Record<AdventureGenre, AdventureTheme> = {
+    [AdventureGenre.FANTASY]: {
         primaryColor: '#ffd700',
         secondaryColor: '#8b4513',
         bgGradient: 'radial-gradient(circle at center, #2e1a0f 0%, #1a0f0a 100%)',
@@ -20,7 +22,7 @@ export const themes: { [key: string]: AdventureTheme } = {
         panelBg: 'rgba(46, 26, 15, 0.85)',
         buttonGradient: 'linear-gradient(to bottom right, #785623 0%, #553e1c 100%)'
     },
-    scifi: {
+    [AdventureGenre.SCIFI]: {
         primaryColor: '#00d4ff',
         secondaryColor: '#005bea',
         bgGradient: 'radial-gradient(circle at center, #0f1c30 0%, #050a14 100%)',
@@ -30,7 +32,7 @@ export const themes: { [key: string]: AdventureTheme } = {
         panelBg: 'rgba(15, 28, 48, 0.85)',
         buttonGradient: 'linear-gradient(45deg, #00d4ff, #005bea)'
     },
-    horror: {
+    [AdventureGenre.HORROR]: {
         primaryColor: '#ff0000',
         secondaryColor: '#4a0000',
         bgGradient: 'radial-gradient(circle at center, #1a0505 0%, #000000 100%)',
@@ -40,7 +42,7 @@ export const themes: { [key: string]: AdventureTheme } = {
         panelBg: 'rgba(26, 5, 5, 0.85)',
         buttonGradient: 'linear-gradient(to bottom, #8b0000, #300000)'
     },
-    superheroes: {
+    [AdventureGenre.SUPERHEROES]: {
         primaryColor: '#ffcc00', // Comic yellow
         secondaryColor: '#e62429', // Marvel red
         bgGradient: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)', // Blue metallic
@@ -50,7 +52,7 @@ export const themes: { [key: string]: AdventureTheme } = {
         panelBg: 'rgba(30, 60, 114, 0.9)',
         buttonGradient: 'linear-gradient(45deg, #e62429, #f78f3f)'
     },
-    romance: {
+    [AdventureGenre.ROMANCE]: {
         primaryColor: '#ff69b4',
         secondaryColor: '#ffb6c1',
         bgGradient: 'radial-gradient(circle at center, #3a1c2a 0%, #1a0b12 100%)',
