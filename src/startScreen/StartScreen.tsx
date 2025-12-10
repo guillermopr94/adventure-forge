@@ -1,21 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Game from "../game/Game";
 import { useTranslation } from "../language/LanguageContext";
 import LanguageSelector from "../language/LanguageSelector";
+import { useTheme } from "../theme/ThemeContext";
 import "./StartScreen.css";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+
+import scifiIcon from '../assets/adventure-icons/scifi.png';
+import superheroesIcon from '../assets/adventure-icons/superheroes.png';
+import fantasyIcon from '../assets/adventure-icons/fantasy.png';
+import romanceIcon from '../assets/adventure-icons/romance.png';
+import horrorIcon from '../assets/adventure-icons/horror.png';
+
+interface GenreConfig {
+    id: string;
+    icon: string;
+}
+
+const GENRES: GenreConfig[] = [
+    { id: 'fantasy', icon: fantasyIcon },
+    { id: 'scifi', icon: scifiIcon },
+    { id: 'horror', icon: horrorIcon },
+    { id: 'superheroes', icon: superheroesIcon },
+    { id: 'romance', icon: romanceIcon },
+];
 
 const StartScreen = (): React.ReactElement => {
     const [step, setStep] = useState<'apikey' | 'selection' | 'game'>('apikey');
     const [userToken, setUserToken] = useState("");
-    const [selectedGenre, setSelectedGenre] = useState("fantasy");
     const { t, setLanguage } = useTranslation();
+    const { setTheme } = useTheme();
+
+    const [currentGenreIndex, setCurrentGenreIndex] = useState(0);
+
+    useEffect(() => {
+        // Initialize theme based on current index
+        setTheme(GENRES[currentGenreIndex].id);
+    }, [currentGenreIndex, setTheme]);
 
     function handleTokenChange(event: React.ChangeEvent<HTMLInputElement>) {
         setUserToken(event.target.value);
-    }
-
-    function handleGenreSelect(genre: string) {
-        setSelectedGenre(genre);
     }
 
     function handleTokenSubmit(event: React.FormEvent) {
@@ -29,11 +53,19 @@ const StartScreen = (): React.ReactElement => {
         setStep('game');
     }
 
+    function rotateGenre(direction: 'prev' | 'next') {
+        if (direction === 'prev') {
+            setCurrentGenreIndex((prev) => (prev === 0 ? GENRES.length - 1 : prev - 1));
+        } else {
+            setCurrentGenreIndex((prev) => (prev === GENRES.length - 1 ? 0 : prev + 1));
+        }
+    }
+
     // Limpiar el array de utterances
     window.utterances = [];
     speechSynthesis.cancel();
 
-    const genres = ['fantasy', 'scifi', 'horror', 'superheroes', 'romance'];
+    const selectedGenre = GENRES[currentGenreIndex];
 
     return (
         <div className="App">
@@ -65,28 +97,34 @@ const StartScreen = (): React.ReactElement => {
 
                     {step === 'selection' && (
                         <div className="step-container fade-in">
-                            <div className="genre-selection">
+                            <div className="genre-selection-carousel">
                                 <h3>{t("select_genre")}</h3>
-                                <div className="genre-cards">
-                                    {genres.map((genre) => (
-                                        <div
-                                            key={genre}
-                                            className={`genre-card ${selectedGenre === genre ? 'selected' : ''}`}
-                                            onClick={() => handleGenreSelect(genre)}
-                                        >
-                                            <div className="genre-icon"></div>
-                                            <div className="genre-name">{t(genre).split(' ')[0] + '...'}</div>
+
+                                <div className="carousel-container">
+                                    <button className="carousel-nav prev" onClick={() => rotateGenre('prev')}>
+                                        <FiChevronLeft size={40} />
+                                    </button>
+
+                                    <div className="selected-genre-display">
+                                        <div className="genre-card large selected">
+                                            <img src={selectedGenre.icon} alt={selectedGenre.id} className="genre-icon" />
+                                            <div className="genre-name">{t('genre_' + selectedGenre.id)}</div>
                                         </div>
-                                    ))}
+                                    </div>
+
+                                    <button className="carousel-nav next" onClick={() => rotateGenre('next')}>
+                                        <FiChevronRight size={40} />
+                                    </button>
                                 </div>
-                                <p className="selected-genre-description">{t(selectedGenre)}</p>
+
+                                <p className="selected-genre-description">{t(selectedGenre.id)}</p>
                                 <button className="modern-button start-game-btn" onClick={startGame}>{t("play")}</button>
                             </div>
                         </div>
                     )}
                 </div>
             ) : (
-                <Game userToken={userToken} gameType={t(selectedGenre)} genreKey={selectedGenre} />
+                <Game userToken={userToken} gameType={t(selectedGenre.id)} genreKey={selectedGenre.id} />
             )}
         </div>
     );

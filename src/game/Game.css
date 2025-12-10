@@ -1,23 +1,25 @@
 body {
-  font-family: 'IM Fell English', serif;
+  font-family: var(--font-body, 'IM Fell English', serif);
   background-color: #222;
-  color: white;
+  color: var(--text-color, white);
   text-align: center;
   margin: 0;
   padding: 0;
-  height: 100vh;
+  /* height: 100vh; -- Removed to let it flow */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
 #game-layout {
-  padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 1300px;
+  width: 100%;
+  max-width: none;
   align-self: center;
+  padding: 0;
 }
 
 #game-layout>* {
@@ -29,53 +31,72 @@ body {
 }
 
 #game-content>p {
-  font-size: 2.3rem;
-  background-color: #d4b99d;
-  padding: 1.4rem 1.5rem;
-  color: #342514;
+  font-size: 1.8rem;
+  /* Slightly smaller font for better density */
+  line-height: 1.6;
+  /* Better line height */
+  background-color: var(--panel-bg, rgba(212, 185, 157, 0.95));
+  /* Dynamic panel bg */
+  padding: 3rem;
+  /* Much larger padding */
+  color: var(--text-color, #342514);
+  /* Dynamic text color (inverse usually for light panels, but themes might vary) */
+  /* Forcing a readable color or using theme specific text color. 
+     If themes have dark backgrounds, panel-bg should be dark and text-color light.
+     If themes have parchment backgrounds, panel-bg is light, text-color dark.
+     To support both, we might need --panel-text-color.
+     For now, let's assume specific contrast in themes or override here.
+     Wait, our themes define panelBg. Need to ensure textColor matches.
+  */
+  border-radius: 15px;
+  /* Rounded corners */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  /* Deep shadow */
+  margin-bottom: 2rem;
+  font-family: var(--font-body);
 }
 
 #options {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
+  /* Space between buttons */
 }
 
 #options button {
   display: block;
-  margin: 10px auto;
-  padding: 14px 5px 14px 79px;
-  font-size: 2rem;
-  background-image: linear-gradient(to bottom right, #785623 0%, #553e1c 100%);
-  border: none;
+  margin: 0;
+  /* Reset margin, use gap instead */
+  padding: 20px 30px;
+  /* Larger padding */
+  font-size: 1.5rem;
+  background-image: var(--button-gradient, linear-gradient(to bottom right, #785623 0%, #553e1c 100%));
+  border: 2px solid rgba(255, 255, 255, 0.1);
   color: white;
-  letter-spacing: -0.05rem;
-  text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black;
-  text-align: left;
+  letter-spacing: 0.05rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  text-align: center;
+  /* Center text */
   text-decoration: none;
   cursor: pointer;
-  border-radius: 5px;
-  font-family: 'IM Fell English', serif;
+  border-radius: 12px;
+  /* More rounded */
+  font-family: var(--font-heading, 'IM Fell English', serif);
   width: 100%;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 #options button:hover {
   border-width: 0;
   border-style: solid;
   position: relative;
+  transform: translateY(-2px);
+  filter: brightness(1.2);
 }
 
-#options button:hover::before {
-  content: '';
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  right: -6px;
-  bottom: -6px;
-  background-image: linear-gradient(to bottom right, #f19954 0%, #9b3327 100%);
-  z-index: -1;
-  border-radius: 5px;
-  filter: blur(2px);
-}
+/* Removed complex pseudo-element hover for simpler gradient manipulation or verify compatibility */
+/* #options button:hover::before ... */
 
 button:disabled {
   opacity: 0.5;
@@ -99,18 +120,29 @@ button:disabled {
 }
 
 .spinner {
-  font-family: 'IM Fell English', serif;
+  font-family: var(--font-heading, 'IM Fell English', serif);
   font-size: 3.5rem;
   text-align: center;
   font-weight: 500;
-  background-image: linear-gradient(135deg, #553e1c, #d4b99d);
+  background-image: var(--button-gradient);
+  /* Use gradient for text clip */
   -webkit-background-clip: text;
+  background-clip: text;
   color: transparent;
+  /* Fallback needs check */
   padding: 20px;
   animation: fadeIn 2s ease-in-out infinite alternate;
 }
 
-/* Estilo para el texto de Star Wars */
+/* Fallback for text clip if needed, or simple color */
+@supports not (background-clip: text) {
+  .spinner {
+    background: none;
+    color: var(--primary-color);
+  }
+}
+
+/* Estilo para el texto de Star Wars - example override if needed */
 #star-wars-text {
   font-family: 'Arial', sans-serif;
   font-size: 3em;
@@ -125,4 +157,63 @@ button:disabled {
 .tools-buttons-container {
   display: flex;
   justify-content: space-between;
+}
+
+.choose-instruction {
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--text-color);
+  opacity: 0.7;
+  margin-bottom: 20px;
+  font-family: var(--font-body);
+}
+
+.fade-in-delayed {
+  animation: fadeInDelayed 1s ease-in forwards;
+}
+
+@keyframes fadeInDelayed {
+  0% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 0.7;
+  }
+}
+
+.game-image-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 20px;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.game-scene-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 400px;
+  object-fit: cover;
+}
+
+.fade-in {
+  animation: fadeIn 1s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }

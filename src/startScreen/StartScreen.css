@@ -1,16 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English&family=Creepster&family=Bangers&family=Great+Vibes&family=Lato&display=swap');
 
 .App {
     text-align: center;
-    background: radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background: var(--bg-gradient, radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%));
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-family: 'Roboto', sans-serif;
-    color: #e0e0e0;
+    font-family: var(--font-body, 'Roboto', sans-serif);
+    color: var(--text-color, #e0e0e0);
     overflow: hidden;
+    transition: background 0.5s ease;
+    padding: 0 2rem;
+    box-sizing: border-box;
+    max-width: 100%;
 }
 
 .start-screen-container {
@@ -24,24 +29,24 @@
 }
 
 #welcome-message {
-    font-family: 'Orbitron', sans-serif;
+    font-family: var(--font-heading, 'Orbitron', sans-serif);
     font-size: 3rem;
     font-weight: 700;
     margin-bottom: 2rem;
     text-transform: uppercase;
     letter-spacing: 3px;
-    color: #00d4ff;
-    text-shadow: 0 0 10px rgba(0, 212, 255, 0.7), 0 0 20px rgba(0, 212, 255, 0.5);
+    color: var(--primary-color, #00d4ff);
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     animation: glow 2s ease-in-out infinite alternate;
 }
 
 @keyframes glow {
     from {
-        text-shadow: 0 0 10px rgba(0, 212, 255, 0.7), 0 0 20px rgba(0, 212, 255, 0.5);
+        text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--secondary-color);
     }
 
     to {
-        text-shadow: 0 0 20px rgba(0, 212, 255, 0.9), 0 0 30px rgba(0, 212, 255, 0.7);
+        text-shadow: 0 0 20px var(--primary-color), 0 0 30px var(--secondary-color);
     }
 }
 
@@ -68,8 +73,8 @@
 }
 
 .token-form-container,
-.genre-selection {
-    background: rgba(22, 33, 62, 0.7);
+.genre-selection-carousel {
+    background: var(--panel-bg, rgba(22, 33, 62, 0.7));
     padding: 40px;
     border-radius: 20px;
     width: 100%;
@@ -77,11 +82,12 @@
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transition: background 0.5s ease;
 }
 
 h3 {
-    font-family: 'Orbitron', sans-serif;
-    color: #fff;
+    font-family: var(--font-heading, 'Orbitron', sans-serif);
+    color: var(--text-color, #fff);
     margin-bottom: 30px;
     font-size: 1.5rem;
 }
@@ -100,8 +106,8 @@ h3 {
 
 .modern-input:focus {
     outline: none;
-    border-color: #00d4ff;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .modern-button {
@@ -109,101 +115,127 @@ h3 {
     padding: 15px;
     border-radius: 8px;
     border: none;
-    background: linear-gradient(45deg, #00d4ff, #005bea);
+    background: var(--button-gradient, linear-gradient(45deg, #00d4ff, #005bea));
     color: #fff;
-    font-family: 'Orbitron', sans-serif;
+    font-family: var(--font-heading, 'Orbitron', sans-serif);
     font-size: 1.2rem;
     font-weight: bold;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.5s ease;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
 .modern-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
 }
 
 .modern-button:active {
     transform: translateY(0);
 }
 
-.genre-cards {
+/* Carousel Styles */
+.carousel-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 20px;
+    position: relative;
+    height: 300px;
+}
+
+.carousel-nav {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    transition: transform 0.2s, color 0.2s;
+    z-index: 2;
+}
+
+.carousel-nav:hover {
+    transform: scale(1.2);
+    color: var(--secondary-color);
+}
+
+.selected-genre-display {
+    width: 250px;
+    height: 250px;
     display: flex;
     justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-bottom: 30px;
+    align-items: center;
+    z-index: 5;
+    /* Ensure it's perfectly centered */
+    margin: 0 auto;
 }
 
 .genre-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 20px;
-    width: 110px;
-    height: 110px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    /* Base styles */
+    background: transparent;
+    border: none;
+    padding: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    position: relative;
-    overflow: hidden;
+    transition: all 0.3s ease;
 }
 
-.genre-card:hover {
-    transform: translateY(-5px) scale(1.05);
-    background: rgba(255, 255, 255, 0.1);
-    border-color: #00d4ff;
-}
-
-.genre-card.selected {
-    border-color: #00d4ff;
-    background: rgba(0, 212, 255, 0.15);
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+.genre-card.large {
+    /* Remove the boxy look for the main selection */
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    box-shadow: none;
 }
 
 .genre-icon {
-    width: 40px;
-    height: 40px;
-    background: #fff;
-    /* Placeholder for icon */
-    mask-size: contain;
-    mask-repeat: no-repeat;
-    mask-position: center;
-    background-color: #ccc;
-    margin-bottom: 10px;
-    transition: background-color 0.3s;
+    width: 200px;
+    height: 200px;
+    margin-bottom: 1.5rem;
+    /* Clean circular icon with glow */
+    border-radius: 50%;
+    filter: drop-shadow(0 0 25px var(--primary-color));
+    object-fit: contain;
+    transition: transform 0.3s ease, filter 0.3s;
+    animation: floatIcon 3s ease-in-out infinite;
 }
 
-.genre-card.selected .genre-icon,
-.genre-card:hover .genre-icon {
-    background-color: #00d4ff;
+@keyframes floatIcon {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
 }
 
 .genre-name {
-    font-size: 0.9rem;
+    font-size: 1.5rem;
     font-weight: bold;
     text-transform: capitalize;
+    font-family: var(--font-heading);
+    color: var(--primary-color);
 }
 
 .selected-genre-description {
     font-size: 1.1rem;
     font-style: italic;
-    color: #a0a0a0;
+    color: var(--text-color);
+    opacity: 0.8;
     margin-bottom: 30px;
-    min-height: 1.5em;
+    min-height: 3em;
+    transition: color 0.5s;
 }
 
 .start-game-btn {
-    background: linear-gradient(45deg, #ff0055, #ff00aa);
-}
-
-.start-game-btn:hover {
-    box-shadow: 0 5px 15px rgba(255, 0, 85, 0.4);
+    /* Specific override if needed, otherwise uses modern-button */
 }
 
 .language-selector-container {
