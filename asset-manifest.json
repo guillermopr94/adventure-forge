@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/adventure-forge/static/css/main.9627ca5e.css",
-    "main.js": "/adventure-forge/static/js/main.7038c26a.js",
+    "main.css": "/adventure-forge/static/css/main.bc421a9f.css",
+    "main.js": "/adventure-forge/static/js/main.83f1503c.js",
     "static/media/fantasy.png": "/adventure-forge/static/media/fantasy.0f3bfbdbf9f18b78f942.png",
     "static/media/scifi.png": "/adventure-forge/static/media/scifi.861fb693f28f9749b616.png",
     "static/media/superheroes.png": "/adventure-forge/static/media/superheroes.e36739292a0443b5a77e.png",
@@ -10,11 +10,11 @@
     "static/media/ES.svg": "/adventure-forge/static/media/ES.e3db1b5f8a2ec8ae87640f32237c01b3.svg",
     "index.html": "/adventure-forge/index.html",
     "static/media/GB.svg": "/adventure-forge/static/media/GB.516897fd3988e35032b772b026a19f75.svg",
-    "main.9627ca5e.css.map": "/adventure-forge/static/css/main.9627ca5e.css.map",
-    "main.7038c26a.js.map": "/adventure-forge/static/js/main.7038c26a.js.map"
+    "main.bc421a9f.css.map": "/adventure-forge/static/css/main.bc421a9f.css.map",
+    "main.83f1503c.js.map": "/adventure-forge/static/js/main.83f1503c.js.map"
   },
   "entrypoints": [
-    "static/css/main.9627ca5e.css",
-    "static/js/main.7038c26a.js"
+    "static/css/main.bc421a9f.css",
+    "static/js/main.83f1503c.js"
   ]
 }
