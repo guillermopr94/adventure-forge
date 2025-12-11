@@ -9,6 +9,7 @@ export interface AdventureTheme {
     textColor: string;
     panelBg: string;
     buttonGradient: string;
+    buttonTextColor: string;
 }
 
 export const themes: Record<AdventureGenre, AdventureTheme> = {
@@ -20,7 +21,8 @@ export const themes: Record<AdventureGenre, AdventureTheme> = {
         fontBody: "'IM Fell English', serif",
         textColor: '#e8dcb5',
         panelBg: 'rgba(46, 26, 15, 0.85)',
-        buttonGradient: 'linear-gradient(to bottom right, #785623 0%, #553e1c 100%)'
+        buttonGradient: 'linear-gradient(to bottom right, #785623 0%, #553e1c 100%)',
+        buttonTextColor: '#fff'
     },
     [AdventureGenre.SCIFI]: {
         primaryColor: '#00d4ff',
@@ -30,7 +32,8 @@ export const themes: Record<AdventureGenre, AdventureTheme> = {
         fontBody: "'Roboto', sans-serif",
         textColor: '#e0f7fa',
         panelBg: 'rgba(15, 28, 48, 0.85)',
-        buttonGradient: 'linear-gradient(45deg, #00d4ff, #005bea)'
+        buttonGradient: 'linear-gradient(45deg, #00d4ff, #005bea)',
+        buttonTextColor: '#fff'
     },
     [AdventureGenre.HORROR]: {
         primaryColor: '#ff0000',
@@ -40,7 +43,8 @@ export const themes: Record<AdventureGenre, AdventureTheme> = {
         fontBody: "'Roboto', sans-serif",
         textColor: '#ffcccc',
         panelBg: 'rgba(26, 5, 5, 0.85)',
-        buttonGradient: 'linear-gradient(to bottom, #8b0000, #300000)'
+        buttonGradient: 'linear-gradient(to bottom, #8b0000, #300000)',
+        buttonTextColor: '#fff'
     },
     [AdventureGenre.SUPERHEROES]: {
         primaryColor: '#ffcc00', // Comic yellow
@@ -50,7 +54,8 @@ export const themes: Record<AdventureGenre, AdventureTheme> = {
         fontBody: "'Roboto', sans-serif",
         textColor: '#ffffff',
         panelBg: 'rgba(30, 60, 114, 0.9)',
-        buttonGradient: 'linear-gradient(45deg, #e62429, #f78f3f)'
+        buttonGradient: 'linear-gradient(45deg, #e62429, #f78f3f)',
+        buttonTextColor: '#fff'
     },
     [AdventureGenre.ROMANCE]: {
         primaryColor: '#ff69b4',
@@ -60,6 +65,7 @@ export const themes: Record<AdventureGenre, AdventureTheme> = {
         fontBody: "'Lato', sans-serif",
         textColor: '#fff0f5',
         panelBg: 'rgba(58, 28, 42, 0.85)',
-        buttonGradient: 'linear-gradient(to right, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)'
+        buttonGradient: 'linear-gradient(to right, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)',
+        buttonTextColor: '#000'
     }
 };

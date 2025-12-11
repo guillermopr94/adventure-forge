@@ -11,6 +11,15 @@ import BackgroundMusic from "../backgroundMusic/BackgroundMusic";
 import { GoogleGenAI } from "@google/genai";
 import Typewriter from "./Typewriter";
 import { getAdventureType } from "../resources/availableTypes";
+import { TextGenerator } from "../services/ai/TextGenerator";
+import { GeminiGenerator } from "../services/ai/GeminiGenerator";
+import { PollinationsGenerator } from "../services/ai/PollinationsGenerator";
+import { FallbackGenerator } from "../services/ai/FallbackGenerator";
+import { AudioGenerator } from "../services/ai/AudioGenerator";
+import { PollinationsTTS } from "../services/ai/audio/PollinationsTTS";
+import { KokoroTTS } from "../services/ai/audio/KokoroTTS";
+import { GeminiTTS } from "../services/ai/audio/GeminiTTS";
+import { AudioFallback } from "../services/ai/audio/AudioFallback";
 
 interface GameProps {
   userToken: string;
@@ -33,8 +42,45 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [gameContent, setGameContent] = useState<string[]>([]);
   const [actualContent, setActualContent] = useState<string | null>(null);
+
+  // AI Service Initialization
+  const [genAIClient, setGenAIClient] = useState<any>(null);
+  const [textGenerator, setTextGenerator] = useState<TextGenerator | null>(null);
+  const [audioGenerator, setAudioGenerator] = useState<AudioGenerator | null>(null);
+
+  useEffect(() => {
+    if (userToken) {
+      // Text Generation Setup
+      const geminiFlash = new GeminiGenerator(userToken, "gemini-2.5-flash");
+      const geminiFlashLite = new GeminiGenerator(userToken, "gemini-2.5-flash-lite");
+      const pollinationsText = new PollinationsGenerator();
+
+      const textFallback = new FallbackGenerator([
+        geminiFlash,
+        geminiFlashLite,
+        pollinationsText
+      ]);
+      setTextGenerator(textFallback);
+
+      // Audio Generation Setup
+      // Priority: Pollinations -> Kokoro -> Gemini
+      const pollinationsVoice = PollinationsTTS.getOpenAIVoiceForGenre(genreKey);
+      console.log(`Using Pollinations Voice: ${pollinationsVoice} for genre: ${genreKey}`);
+      const pollinationsAudio = new PollinationsTTS(pollinationsVoice, genreKey);
+      const kokoroAudio = new KokoroTTS(language, genreKey);
+      const geminiAudio = new GeminiTTS(userToken);
+
+      const audioFallback = new AudioFallback([
+        pollinationsAudio,
+        kokoroAudio,
+        geminiAudio
+      ]);
+      setAudioGenerator(audioFallback);
+    }
+  }, [userToken, language, genreKey]);
+
   // Audio state handled by useSmartAudio now
-  const [currentAudioDuration, setCurrentAudioDuration] = useState<number>(0);
+
 
   const audioFile = getAdventureType(genreKey).music;
 
@@ -61,15 +107,32 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
   const {
     audioData,
     isLoading: isLoadingAudio,
-    playText,
+    visualText,
+    visualDuration,
+    prepareText,
+    start,
     onAudioComplete
   } = useSmartAudio(
     userToken,
     language,
     genreKey,
-    setCurrentAudioDuration,
-    handleTextComplete
+    () => { }, // setDuration callback no longer needed for sync
+    handleTextComplete,
+    audioGenerator, // Inject the service
   );
+
+  // Sync visual text from hook to game content
+  useEffect(() => {
+    if (visualText) {
+      setActualContent(visualText);
+      setGameContent(prev => {
+        if (prev.length === 0) return [visualText];
+        const copy = [...prev];
+        copy[copy.length - 1] = visualText;
+        return copy;
+      });
+    }
+  }, [visualText]);
 
   const [gameHistory, setGameHistory] = useState<any[]>([
     {
@@ -146,10 +209,15 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
     // setGameContent((prev) => [...prev, newText]); 
 
     // Generate audio for the new text *before* showing the options
-    await Promise.all([playText(newText), generateGameImage(newText)]);
+    // Note: We use visualText effect to update content now.
+    // However, we need to initialize the content entry first.
+    setGameContent((prev) => [...prev, ""]);
 
-    // Now update content, so Typewriter has correct duration
-    setGameContent((prev) => [...prev, newText]);
+    await Promise.all([prepareText(newText), generateGameImage(newText)]);
+
+    // Now both audio (first chunk) and image are ready.
+    // Trigger playback
+    start();
 
     if (!voicesLoaded) {
       const checkVoicesInterval = setInterval(() => {
@@ -192,7 +260,7 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
     setActualContent(null);
     // setAudioData(undefined); // Reset handled by playText
     setCurrentImage(null);
-    setCurrentAudioDuration(0);
+
 
     // Get the text of the chosen option
     const buttons = [option1, option2, option3];
@@ -216,11 +284,19 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
     // setGameContent((prev) => [...prev, newText]);
     // setActualContent(newText);
 
+
+    // Push empty string for new content slot
+    setGameContent((prev) => [...prev, ""]);
+
     // Generate audio *before* showing the options
-    const audioPromise = playText(newText);
+    // Generate audio *before* showing the options
+    const audioPromise = prepareText(newText);
     const imagePromise = generateGameImage(newText);
 
     await Promise.all([audioPromise, imagePromise]);
+
+    // Trigger playback after loading is complete
+    start();
 
     let finalContent = newText;
 
@@ -231,8 +307,20 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
       if (option3.current) option3.current.disabled = true;
     }
 
-    setGameContent((prev) => [...prev, finalContent]);
-    setActualContent(finalContent);
+    // We rely on visualText to update the main content. 
+    // If there is extra content appended (like "Restart"), handle it?
+    // Actually, playText only plays the model response.
+    // If we manually append, we should update visualText via effect? 
+    // Or just let it be. 'playText' drives the audio. 
+    // If we want the restart text to appear, we should probably append it to the text passed to playText?
+    // But playText is async.
+
+    // For now, if game ends, just let the text play out.
+    // The "Restart" text is usually appended. 
+    // If we want it spoken, pass it to playText.
+
+    // setGameContent((prev) => [...prev, finalContent]); // Removed, handled by effect
+    // setActualContent(finalContent);
 
     toggleSpinner(false);
   }
@@ -318,39 +406,24 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
     }
   }
 
-  // Gemini API Integration
-  const [genAIClient, setGenAIClient] = useState<any>(null);
+
+
+
+
+
+
 
   async function fetchGeminiResponse(prompt: string): Promise<string> {
+    if (!textGenerator) {
+      console.error("TextGenerator not initialized");
+      return "Error: AI Service not initialized.";
+    }
+
     try {
-      let client = genAIClient;
-      if (!client) {
-        client = new GoogleGenAI({ apiKey: userToken });
-        setGenAIClient(client);
-      }
-
-      // Construct prompt from history
-      let fullPrompt = "";
-      gameHistory.forEach(msg => {
-        const text = msg.parts ? msg.parts[0].text : "";
-        fullPrompt += `${msg.role === 'user' ? 'User' : 'Model'}: ${text}\n`;
-      });
-      fullPrompt += `User: ${prompt}\nModel:`;
-
-      const response = await client.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: fullPrompt,
-        config: {
-          temperature: 0.7,
-        }
-      });
-
-      const text = response.text;
-      return text || "No response text";
-
+      return await textGenerator.generate(prompt, gameHistory);
     } catch (error) {
-      console.error("Error fetching from Gemini:", error);
-      return "Error: Could not connect to the AI. Please check your API key and try again.";
+      console.error("All AI services failed:", error);
+      return "Error: Could not connect to any AI service. Please check your internet connection and try again.";
     }
   }
 
@@ -434,7 +507,7 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
                 <Typewriter
                   text={item}
                   isActive={index === gameContent.length - 1}
-                  duration={index === gameContent.length - 1 ? currentAudioDuration : 0}
+                  duration={index === gameContent.length - 1 ? visualDuration : 0}
                 // onComplete removed to prevent premature button loading
                 />
               </p>

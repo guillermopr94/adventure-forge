@@ -22,7 +22,7 @@ const ApiKeyScreen: React.FC = () => {
         <div className="step-container fade-in">
             <div className="token-form-container">
                 <h3>{t("enter_token")}</h3>
-                <form onSubmit={handleTokenSubmit} id="token-form">
+                <form onSubmit={handleTokenSubmit} id="token-form" className="token-form">
                     <input
                         type="text"
                         value={userToken}

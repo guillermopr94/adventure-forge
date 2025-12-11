@@ -1,113 +1,135 @@
 
 import { useState, useRef } from 'react';
-import { generateKokoroAudio } from '../utils/kokoroTTS';
-import { GoogleGenAI } from "@google/genai";
 import { splitFirstSentence } from '../utils/textSplitter';
+import { AudioGenerator } from '../services/ai/AudioGenerator';
 
 export const useSmartAudio = (
     userToken: string,
     language: string,
     genreKey: string,
     setDuration: (ms: number) => void,
-    onSequenceEnd: () => void
+    onSequenceEnd: () => void,
+    audioGenerator: AudioGenerator | null
 ) => {
     const [audioData, setAudioData] = useState<string | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(false);
+    const [visualText, setVisualText] = useState("");
+    const [visualDuration, setVisualDuration] = useState(0);
 
     const pendingAudioRef = useRef<Promise<string | null> | null>(null);
     const hasNextChunkRef = useRef(false);
-    const genAIClientRef = useRef<any>(null);
+    // Staging refs for the prepared first chunk
+    const nextStartDataRef = useRef<{
+        audio: string;
+        text: string;
+        duration: number;
+        fullText: string;
+    } | null>(null);
 
-    const getClient = () => {
-        if (!genAIClientRef.current && userToken) {
-            genAIClientRef.current = new GoogleGenAI({ apiKey: userToken });
+    // To handle the full text for final state
+    const fullTextRef = useRef("");
+    const part2TextRef = useRef("");
+
+    const calculateDuration = (base64Data: string, text: string) => {
+        // Check for MP3 header (ID3 or Frame Sync) - rudimentary check
+        // First few bytes of base64 for ID3: "SUQz" (which decodes to ID3)
+        // or frame sync
+        // Or if it starts with // which is u32 or something? No, base64 for ID3 often starts with SUQz
+
+        const isMp3 = base64Data.startsWith("SUQz") || base64Data.startsWith("//"); // Typical MP3 starts or similar
+
+        if (isMp3) {
+            // For MP3, byte-based duration is unreliable without decoding.
+            // Fallback to text-based estimation: avg speaking rate ~15 chars/sec = ~66ms/char
+            // Pollinations/OpenAI is relatively fast, maybe 50-60ms/char
+            return text.length * 60;
         }
-        return genAIClientRef.current;
-    };
 
-    const calculateDuration = (base64Data: string) => {
-        // Approx duration for 24kHz 16-bit mono
+        // Approx duration for 24kHz 16-bit mono PCM (Kokoro)
         const byteLength = (base64Data.length * 3) / 4;
         return (byteLength / 48000) * 1000; // in ms
     };
 
     const generateChunk = async (text: string): Promise<string | null> => {
         if (!text.trim()) return null;
+        if (!audioGenerator) {
+            console.warn("Audio Generator not initialized in hook");
+            return null;
+        }
 
         try {
-            // 1. Try Kokoro
-            const kokoroAudio = await generateKokoroAudio(text, language, genreKey);
-            if (kokoroAudio) return kokoroAudio;
-
-            // 2. Fallback Gemini
-            console.log("Kokoro failed, using Gemini fallback...");
-            const client = getClient();
-            if (!client) return null;
-
-            const response = await client.models.generateContent({
-                model: "gemini-2.5-flash-preview-tts",
-                contents: [{ parts: [{ text: text }] }],
-                config: {
-                    responseModalities: ['AUDIO'],
-                    speechConfig: {
-                        voiceConfig: {
-                            prebuiltVoiceConfig: { voiceName: 'Kore' },
-                        },
-                    },
-                },
-            });
-
-            return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
-
+            return await audioGenerator.generate(text);
         } catch (e) {
-            console.error("Audio generation failed", e);
+            console.error("Audio generation failed via service", e);
             return null;
         }
     };
 
-    const playText = async (text: string) => {
+    const prepareText = async (text: string) => {
         setIsLoading(true);
-        setAudioData(undefined);
+        // Clear previous pending states
         hasNextChunkRef.current = false;
         pendingAudioRef.current = null;
+        nextStartDataRef.current = null;
+        part2TextRef.current = "";
 
-        const [part1, part2] = splitFirstSentence(text);
+        fullTextRef.current = text;
 
-        console.log("Splitting text:", { part1: part1.substring(0, 20) + "...", part2Length: part2.length });
+        let part1 = text;
+        let part2 = "";
 
-        // Generate Part 1
+        // Only split if the generator requests it (e.g., Kokoro)
+        if (audioGenerator?.shouldSplitText) {
+            const parts = splitFirstSentence(text);
+            part1 = parts[0];
+            part2 = parts[1];
+        }
+
+        console.log("Audio prep:", { shouldSplit: audioGenerator?.shouldSplitText, part1: part1.substring(0, 20) + "...", part2Length: part2.length });
+
+        // Fetch 1st chunk
         const audio1 = await generateChunk(part1);
 
         if (audio1) {
-            // Start playing Part 1
-            setAudioData(audio1);
-            setIsLoading(false);
+            const duration1 = calculateDuration(audio1, part1);
 
-            const duration1 = calculateDuration(audio1);
+            // Stash data for start()
+            nextStartDataRef.current = {
+                audio: audio1,
+                text: part1,
+                duration: duration1,
+                fullText: text
+            };
 
-            // If we have a second part, start generating it immediately
+            // Start 2nd chunk fetch SEQUENTIALLY (after 1st is done)
             if (part2.trim().length > 0) {
                 hasNextChunkRef.current = true;
-
-                // Estimate total duration
-                // We assume uniform speed roughly. 
-                // Total Duration ~= Duration1 * (TotalLength / Part1Length)
-                const totalLength = text.length;
-                const part1Length = part1.length;
-                const estimatedTotal = duration1 * (totalLength / part1Length);
-
-                // Add buffer
-                setDuration(estimatedTotal + 1000);
-
-                // Start fetching Part 2
                 pendingAudioRef.current = generateChunk(part2);
-            } else {
-                setDuration(duration1 + 1000);
+                part2TextRef.current = part2;
             }
+        }
 
+        setIsLoading(false);
+    };
+
+    const start = () => {
+        // Reset current audio state
+        setAudioData(undefined);
+
+        if (nextStartDataRef.current) {
+            const { audio, text, duration } = nextStartDataRef.current;
+
+            // Apply state updates to trigger UI and Audio
+            setAudioData(audio);
+            setVisualText(text);
+            setVisualDuration(duration);
+
+            // We expect Typewriter to finish in `duration`. 
+            // If there's a second chunk, onAudioComplete will pick it up
         } else {
-            // Failed to generate audio for part 1 (or at all)
-            setIsLoading(false);
+            // Fallback if preparation failed or was empty
+            setVisualText(fullTextRef.current);
+            setVisualDuration(1000);
             onSequenceEnd();
         }
     };
@@ -117,14 +139,19 @@ export const useSmartAudio = (
             // We are expecting a second chunk
             hasNextChunkRef.current = false; // Only one extra chunk supported for now
 
-            // While we await, the user might experience silence if generation is slow.
-            // Ideally we could show a mini-loader, but for now we just wait.
             try {
                 const audio2 = await pendingAudioRef.current;
                 pendingAudioRef.current = null;
 
                 if (audio2) {
                     setAudioData(audio2);
+                    const duration2 = calculateDuration(audio2, part2TextRef.current);
+
+                    // Update visuals for Part 2
+                    // We set visualText to FULL text. Typewriter will type extension.
+                    setVisualText(fullTextRef.current);
+                    setVisualDuration(duration2);
+
                 } else {
                     onSequenceEnd();
                 }
@@ -140,7 +167,10 @@ export const useSmartAudio = (
     return {
         audioData,
         isLoading,
-        playText,
+        visualText,
+        visualDuration,
+        prepareText,
+        start,
         onAudioComplete
     };
 };

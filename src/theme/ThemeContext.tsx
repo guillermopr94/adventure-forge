@@ -31,6 +31,7 @@ export const ThemeProvider: React.FC<React.PropsWithChildren<{}>> = ({ children 
         root.style.setProperty('--text-color', activeTheme.textColor);
         root.style.setProperty('--panel-bg', activeTheme.panelBg);
         root.style.setProperty('--button-gradient', activeTheme.buttonGradient);
+        root.style.setProperty('--button-text-color', activeTheme.buttonTextColor);
 
     }, [theme]);
 

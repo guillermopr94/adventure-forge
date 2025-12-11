@@ -13,7 +13,7 @@
     color: var(--text-color, #e0e0e0);
     overflow: hidden;
     transition: background 0.5s ease;
-    padding: 0 2rem;
+    padding: 0 2rem 2rem 2rem;
     box-sizing: border-box;
     max-width: 100%;
 }
@@ -29,15 +29,34 @@
 }
 
 #welcome-message {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    text-align: center;
+    min-height: 10rem;
     font-family: var(--font-heading, 'Orbitron', sans-serif);
-    font-size: 3rem;
+    /* Fluid typography: 1.8rem min, 5vw preferred, 3rem max */
+    font-size: clamp(2rem, 5vw, 4rem);
     font-weight: 700;
     margin-bottom: 2rem;
     text-transform: uppercase;
     letter-spacing: 3px;
+    line-height: 1.2;
     color: var(--primary-color, #00d4ff);
     text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     animation: glow 2s ease-in-out infinite alternate;
+    width: 100%;
+    word-wrap: break-word;
+}
+
+@media (max-width: 600px) {
+    #welcome-message {
+        font-size: 1.7rem;
+        min-height: 80px;
+        letter-spacing: 1px;
+        margin-bottom: 0;
+    }
 }
 
 @keyframes glow {
@@ -85,6 +104,11 @@
     transition: background 0.5s ease;
 }
 
+.token-form {
+    display: flex;
+    flex-direction: column;
+}
+
 h3 {
     font-family: var(--font-heading, 'Orbitron', sans-serif);
     color: var(--text-color, #fff);
@@ -93,7 +117,6 @@ h3 {
 }
 
 .modern-input {
-    width: 100%;
     padding: 15px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -116,7 +139,7 @@ h3 {
     border-radius: 8px;
     border: none;
     background: var(--button-gradient, linear-gradient(45deg, #00d4ff, #005bea));
-    color: #fff;
+    color: var(--button-text-color, #fff);
     font-family: var(--font-heading, 'Orbitron', sans-serif);
     font-size: 1.2rem;
     font-weight: bold;

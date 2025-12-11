@@ -21,22 +21,50 @@ const Typewriter: React.FC<TypewriterProps> = ({ text, duration = 3000, isActive
             return;
         }
 
-        // Reset if text changes
-        setDisplayedText('');
+        const totalChars = text.length;
+        const previousChars = displayedText.length;
+
+        // If this is a completely new text (not an extension of current), reset
+        // Use startsWith checking, but be careful of empty string
+        const isExtension = previousChars > 0 && text.startsWith(displayedText);
+
+        if (!isExtension) {
+            // Reset logic
+            if (previousChars > 0 && text !== displayedText) {
+                setDisplayedText('');
+                // Note: We'll continue in next render or immediately set?
+                // Ideally we want to just reset start.
+            }
+        }
+
+        // If we have already finished this exact text, do nothing
+        if (displayedText === text) {
+            if (!completedRef.current) {
+                completedRef.current = true;
+                onComplete && onComplete();
+            }
+            return;
+        }
+
         completedRef.current = false;
 
-        const totalChars = text.length;
-        if (totalChars === 0) return;
+        // Calculate characters needed to type
+        const charsToTypeCount = totalChars - (isExtension ? previousChars : 0);
+        if (charsToTypeCount <= 0) return;
 
-        // Calculate interval based on duration
-        // Ensure a minimum speed so it's not too slow for short text
-        // and not too fast for long text (though duration usually bounds it).
-        const intervalTime = Math.max(10, duration / totalChars);
+        // Duration is for the *new* part effectively? 
+        // We need to decide how 'duration' prop is treated.
+        // Assuming the parent passes the duration for the "current operation".
+        // If it's extension, duration is for the extension.
 
-        // Adjust for slight overhead, maybe run slightly faster to ensure it finishes within duration
+        const intervalTime = Math.max(10, duration / charsToTypeCount);
         const adjustedInterval = intervalTime * 0.95;
 
-        let charIndex = 0;
+        // Start from correct index
+        let charIndex = isExtension ? previousChars : 0;
+
+        // Clear any existing interval in this scope? (useEffect cleanup handles it)
+
         const timer = setInterval(() => {
             charIndex++;
             setDisplayedText(text.slice(0, charIndex));

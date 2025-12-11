@@ -76,6 +76,22 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
         );
     };
 
+    // Helper to identify MP3 header (ID3 or Frame Sync)
+    const isMp3 = (buffer: ArrayBuffer) => {
+        if (buffer.byteLength < 3) return false;
+        const view = new DataView(buffer);
+        // Check for ID3 tag (ID3)
+        if (view.getUint8(0) === 0x49 && view.getUint8(1) === 0x44 && view.getUint8(2) === 0x33) {
+            return true;
+        }
+        // Check for frame sync (approximate, usually FFFB or FFF3)
+        // This is less reliable without parsing, but sufficient for common mismatch
+        if (view.getUint16(0) >= 0xFFE0) {
+            return true;
+        }
+        return false;
+    };
+
     // Effect for Audio
     useEffect(() => {
         if (audioData) {
@@ -90,16 +106,21 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
             try {
                 const audioBuffer = base64ToArrayBuffer(audioData);
                 let blobParts: BlobPart[] = [];
+                let mimeType = 'audio/wav';
 
                 if (hasWavHeader(audioBuffer)) {
                     blobParts = [audioBuffer];
+                } else if (isMp3(audioBuffer)) {
+                    blobParts = [audioBuffer];
+                    mimeType = 'audio/mpeg';
                 } else {
+                    // Assume raw PCM 16-bit 24kHz mono (Kokoro default?)
                     const wavHeader = createWavHeader(audioBuffer.byteLength);
                     blobParts = [wavHeader, audioBuffer];
                 }
 
-                const wavBlob = new Blob(blobParts, { type: 'audio/wav' });
-                const audioUrl = URL.createObjectURL(wavBlob);
+                const audioBlob = new Blob(blobParts, { type: mimeType });
+                const audioUrl = URL.createObjectURL(audioBlob);
 
                 const audio = new Audio(audioUrl);
                 audio.volume = volume;
