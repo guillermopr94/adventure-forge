@@ -73,7 +73,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
       // Text Generation Setup
       const geminiFlash = new GeminiGenerator(userToken, "gemini-2.5-flash", handleGeminiAuthError);
       const geminiFlashLite = new GeminiGenerator(userToken, "gemini-2.5-flash-lite", handleGeminiAuthError);
-      const pollinationsText = new PollinationsGenerator();
+      const pollinationsText = new PollinationsGenerator(pollinationsToken, handlePollinationsAuthError);
 
       const textFallback = new FallbackGenerator([
         geminiFlash,

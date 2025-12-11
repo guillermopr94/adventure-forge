@@ -53,13 +53,23 @@ export class PollinationsTTS implements AudioGenerator {
             const prompt = `${instructions} Say exactly this: ${text}`;
 
             const encodedText = encodeURIComponent(prompt);
-            let url = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=${this.voice}`;
+            let url = "";
 
             if (this.token) {
-                url += `&key=${this.token}`;
+                // Use authenticated endpoint if token is present
+                // Docs: https://enter.pollinations.ai/api/docs
+                url = `https://gen.pollinations.ai/text/${encodedText}?model=openai-audio&voice=${this.voice}&key=${this.token}`;
+            } else {
+                // Fallback to free tier facade
+                url = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=${this.voice}`;
             }
 
-            const response = await fetch(url);
+            const headers: HeadersInit = {};
+            if (this.token) {
+                headers['Authorization'] = `Bearer ${this.token}`;
+            }
+
+            const response = await fetch(url, { headers });
 
             if (response.status === 401 || response.status === 403) {
                 console.warn("Pollinations Unauthorized. Clearing token.");

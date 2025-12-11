@@ -202,6 +202,7 @@ button:disabled {
   display: block;
   max-height: 400px;
   object-fit: cover;
+  max-width: 100%;
 }
 
 .fade-in {

@@ -1,14 +1,17 @@
-
 import { TextGenerator } from "./TextGenerator";
 
 export class PollinationsGenerator implements TextGenerator {
+    private token?: string;
+    private onUnauthorized?: () => void;
+
+    constructor(token?: string, onUnauthorized?: () => void) {
+        this.token = token;
+        this.onUnauthorized = onUnauthorized;
+    }
+
     async generate(prompt: string, history: any[]): Promise<string> {
         try {
             console.log("PollinationsGenerator: Generating...");
-
-            // Construct prompt from history for context, similar to Gemini but for a simple endpoint
-            // Pollinations text API typically accepts a straightforward prompt or chat structure.
-            // Assuming a simple GET/POST to https://text.pollinations.ai/
 
             let fullPrompt = "";
             history.forEach(msg => {
@@ -18,12 +21,26 @@ export class PollinationsGenerator implements TextGenerator {
             fullPrompt += `User: ${prompt}\nModel:`;
 
             const encodedPrompt = encodeURIComponent(fullPrompt);
-            // Using a random seed to vary responses slightly if needed, though text might not use it the same way as images.
-            // The text API usually works as https://text.pollinations.ai/{prompt}
+            let url = "";
 
-            const url = `https://text.pollinations.ai/${encodedPrompt}`;
+            if (this.token) {
+                url = `https://gen.pollinations.ai/text/${encodedPrompt}?key=${this.token}`;
+            } else {
+                url = `https://text.pollinations.ai/${encodedPrompt}`;
+            }
 
-            const response = await fetch(url);
+            const headers: HeadersInit = {};
+            if (this.token) {
+                headers['Authorization'] = `Bearer ${this.token}`;
+            }
+
+            const response = await fetch(url, { headers });
+
+            if (response.status === 401 || response.status === 403) {
+                console.warn("PollinationsGenerator Unauthorized. Clearing token.");
+                if (this.onUnauthorized) this.onUnauthorized();
+            }
+
             if (!response.ok) throw new Error(`Pollinations API error: ${response.statusText}`);
 
             const text = await response.text();
