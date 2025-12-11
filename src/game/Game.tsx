@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
+import { useSmartAudio } from "../hooks/useSmartAudio";
 import { useLanguage, useTranslation } from "../language/LanguageContext";
+import { useNavigation } from "../contexts/NavigationContext";
 import "./Game.css";
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
@@ -31,8 +33,7 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [gameContent, setGameContent] = useState<string[]>([]);
   const [actualContent, setActualContent] = useState<string | null>(null);
-  const [audioData, setAudioData] = useState<string | undefined>(undefined);
-  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  // Audio state handled by useSmartAudio now
   const [currentAudioDuration, setCurrentAudioDuration] = useState<number>(0);
 
   const audioFile = getAdventureType(genreKey).music;
@@ -55,6 +56,20 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
   }, []);
 
   const selectedVoice = voices.find((voice) => voice.lang.startsWith(language));
+
+  // Hook for Smart Audio (Split & Stream)
+  const {
+    audioData,
+    isLoading: isLoadingAudio,
+    playText,
+    onAudioComplete
+  } = useSmartAudio(
+    userToken,
+    language,
+    genreKey,
+    setCurrentAudioDuration,
+    handleTextComplete
+  );
 
   const [gameHistory, setGameHistory] = useState<any[]>([
     {
@@ -110,50 +125,13 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
     toggleOptions(true);
   }
 
-  async function generateAudio(text: string) {
-    setIsLoadingAudio(true);
-    try {
-      let client = genAIClient;
-      if (!client) {
-        client = new GoogleGenAI({ apiKey: userToken });
-        setGenAIClient(client);
-      }
 
-      const response = await client.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: text }] }],
-        config: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Kore' },
-            },
-          },
-        },
-      });
-
-      const data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (data) {
-        setAudioData(data);
-        // Calculate duration logic (24kHz, 1 channel, 16bit = 2 bytes per sample -> 48000 bytes/sec)
-        // Base64 size * 3/4 = approx byte size
-        const byteLength = (data.length * 3) / 4;
-        const durationSeconds = byteLength / 48000;
-        setCurrentAudioDuration((durationSeconds * 1000) + 1000); // ms + 1s buffer for playback start delay
-      }
-
-    } catch (error) {
-      console.error("Error generating audio:", error);
-    } finally {
-      setIsLoadingAudio(false);
-    }
-  }
 
   async function startGame() {
     toggleSpinner(true);
     toggleOptions(false);
     setActualContent(null);
-    setAudioData(undefined); // Reset audio
+    // setAudioData(undefined); // Reset handled by playText
     setCurrentImage(null);
 
     const introPrompt = t("intro_prompt", { gameType: gameType });
@@ -168,7 +146,7 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
     // setGameContent((prev) => [...prev, newText]); 
 
     // Generate audio for the new text *before* showing the options
-    await Promise.all([generateAudio(newText), generateGameImage(newText)]);
+    await Promise.all([playText(newText), generateGameImage(newText)]);
 
     // Now update content, so Typewriter has correct duration
     setGameContent((prev) => [...prev, newText]);
@@ -212,7 +190,7 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
     toggleOptions(false);
     toggleSpinner(true);
     setActualContent(null);
-    setAudioData(undefined); // Reset audio
+    // setAudioData(undefined); // Reset handled by playText
     setCurrentImage(null);
     setCurrentAudioDuration(0);
 
@@ -239,7 +217,7 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
     // setActualContent(newText);
 
     // Generate audio *before* showing the options
-    const audioPromise = generateAudio(newText);
+    const audioPromise = playText(newText);
     const imagePromise = generateGameImage(newText);
 
     await Promise.all([audioPromise, imagePromise]);
@@ -404,9 +382,22 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
     }
   };
 
+  const { goBack } = useNavigation();
+
+  function handleExit() {
+    window.speechSynthesis.cancel();
+    goBack();
+  }
+
   return (
     <>
       <div className="tools-buttons-container">
+
+        {/* Back Button */}
+        <button onClick={handleExit} style={{ background: 'none', border: 'none', cursor: 'pointer', marginRight: '10px' }} title={t("back_to_menu") || "Back"}>
+          <span style={{ fontSize: '30px', color: 'white' }}>←</span>
+        </button>
+
         <div>
           <BackgroundMusic audioFile={audioFile} />
           {(voicesLoaded && actualContent != null) && (
@@ -415,7 +406,7 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
               voice={selectedVoice}
               audioData={audioData}
               isLoadingAudio={isLoadingAudio}
-              onComplete={handleTextComplete}
+              onComplete={onAudioComplete}
             />
           )}
         </div>

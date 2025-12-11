@@ -55,7 +55,28 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
         return header;
     };
 
-    // Effect for Gemini Audio
+    // Helper to identify WAV header
+    const hasWavHeader = (buffer: ArrayBuffer) => {
+        if (buffer.byteLength < 44) return false;
+        const view = new DataView(buffer);
+        // Check for 'RIFF' at start (0x52494646) and 'WAVE' at offset 8 (0x57415645)
+        // IDs are big-endian in the file, but DataView checks endianness depending on flag.
+        // Actually ASCII chars are single bytes so endianness doesn't matter for the byte sequence if reading byte by byte.
+        // But reading as Uint32 requires care.
+        // 'R' 'I' 'F' 'F' is 0x52 0x49 0x46 0x46
+        return (
+            view.getUint8(0) === 0x52 &&
+            view.getUint8(1) === 0x49 &&
+            view.getUint8(2) === 0x46 &&
+            view.getUint8(3) === 0x46 &&
+            view.getUint8(8) === 0x57 &&
+            view.getUint8(9) === 0x41 &&
+            view.getUint8(10) === 0x56 &&
+            view.getUint8(11) === 0x45
+        );
+    };
+
+    // Effect for Audio
     useEffect(() => {
         if (audioData) {
             // Stop any existing speech synthesis
@@ -67,9 +88,17 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
             }
 
             try {
-                const pcmData = base64ToArrayBuffer(audioData);
-                const wavHeader = createWavHeader(pcmData.byteLength);
-                const wavBlob = new Blob([wavHeader, pcmData], { type: 'audio/wav' });
+                const audioBuffer = base64ToArrayBuffer(audioData);
+                let blobParts: BlobPart[] = [];
+
+                if (hasWavHeader(audioBuffer)) {
+                    blobParts = [audioBuffer];
+                } else {
+                    const wavHeader = createWavHeader(audioBuffer.byteLength);
+                    blobParts = [wavHeader, audioBuffer];
+                }
+
+                const wavBlob = new Blob(blobParts, { type: 'audio/wav' });
                 const audioUrl = URL.createObjectURL(wavBlob);
 
                 const audio = new Audio(audioUrl);
