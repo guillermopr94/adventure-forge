@@ -2,7 +2,7 @@
   "name": "adventure-forge",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://guillermo94.github.io/adventure-forge",
+  "homepage": "https://guillermo94pr.github.io/adventure-forge",
   "dependencies": {
     "@google/genai": "^1.31.0",
     "@google/generative-ai": "^0.24.1",
