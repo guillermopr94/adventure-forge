@@ -18,7 +18,7 @@ const StartScreen = (): React.ReactElement => {
 };
 
 const StartScreenContent = (): React.ReactElement => {
-    const { currentScreen, userToken, selectedGenreIndex, navigate } = useNavigation();
+    const { currentScreen, userToken, openaiKey, selectedGenreIndex, navigate } = useNavigation();
     const { t } = useTranslation();
     const selectedGenre = ADVENTURE_TYPES[selectedGenreIndex];
 
@@ -31,7 +31,7 @@ const StartScreenContent = (): React.ReactElement => {
                     {currentScreen === 'selection' && <AdventureSelectionScreen />}
                 </div>
             ) : (
-                <Game userToken={userToken} gameType={t(selectedGenre.id)} genreKey={selectedGenre.id} />
+                <Game userToken={userToken} openaiKey={openaiKey} gameType={t(selectedGenre.id)} genreKey={selectedGenre.id} />
             )}
         </div>
     );

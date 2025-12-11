@@ -5,10 +5,26 @@ import { useNavigation } from '../contexts/NavigationContext';
 
 const ApiKeyScreen: React.FC = () => {
     const { t, setLanguage } = useTranslation();
-    const { userToken, setUserToken, navigate } = useNavigation();
+    const {
+        userToken,
+        setUserToken,
+        openaiKey,
+        setOpenaiKey,
+        pollinationsToken,
+        setPollinationsToken,
+        navigate
+    } = useNavigation();
 
     function handleTokenChange(event: React.ChangeEvent<HTMLInputElement>) {
         setUserToken(event.target.value);
+    }
+
+    function handleOpenAiTokenChange(event: React.ChangeEvent<HTMLInputElement>) {
+        setOpenaiKey(event.target.value);
+    }
+
+    function handlePollinationsTokenChange(event: React.ChangeEvent<HTMLInputElement>) {
+        setPollinationsToken(event.target.value);
     }
 
     function handleTokenSubmit(event: React.FormEvent) {
@@ -30,6 +46,22 @@ const ApiKeyScreen: React.FC = () => {
                         placeholder="Google API Key"
                         required
                         className="modern-input"
+                    />
+                    <input
+                        type="text"
+                        value={openaiKey}
+                        onChange={handleOpenAiTokenChange}
+                        placeholder="OpenAI API Key (Optional)"
+                        className="modern-input"
+                        style={{ marginTop: '10px' }}
+                    />
+                    <input
+                        type="text"
+                        value={pollinationsToken}
+                        onChange={handlePollinationsTokenChange}
+                        placeholder="Pollinations Token (Optional)"
+                        className="modern-input"
+                        style={{ marginTop: '10px' }}
                     />
                     <button className="modern-button" type="submit">{t("next") || "Next"}</button>
                 </form>

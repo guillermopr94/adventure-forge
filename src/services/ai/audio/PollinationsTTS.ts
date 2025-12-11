@@ -6,9 +6,14 @@ export class PollinationsTTS implements AudioGenerator {
     private genre: string;
     public readonly shouldSplitText = false;
 
-    constructor(voice: string = "alloy", genre: string = "fantasy") {
+    private token?: string;
+    private onUnauthorized?: () => void;
+
+    constructor(voice: string = "alloy", genre: string = "fantasy", token?: string, onUnauthorized?: () => void) {
         this.voice = voice;
         this.genre = genre;
+        this.token = token;
+        this.onUnauthorized = onUnauthorized;
     }
 
     static getOpenAIVoiceForGenre(genre: string): string {
@@ -48,9 +53,19 @@ export class PollinationsTTS implements AudioGenerator {
             const prompt = `${instructions} Say exactly this: ${text}`;
 
             const encodedText = encodeURIComponent(prompt);
-            const url = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=${this.voice}`;
+            let url = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=${this.voice}`;
+
+            if (this.token) {
+                url += `&key=${this.token}`;
+            }
 
             const response = await fetch(url);
+
+            if (response.status === 401 || response.status === 403) {
+                console.warn("Pollinations Unauthorized. Clearing token.");
+                if (this.onUnauthorized) this.onUnauthorized();
+            }
+
             if (!response.ok) throw new Error(`Pollinations TTS error: ${response.statusText}`);
 
             const blob = await response.blob();

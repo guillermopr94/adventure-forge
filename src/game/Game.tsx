@@ -20,14 +20,16 @@ import { PollinationsTTS } from "../services/ai/audio/PollinationsTTS";
 import { KokoroTTS } from "../services/ai/audio/KokoroTTS";
 import { GeminiTTS } from "../services/ai/audio/GeminiTTS";
 import { AudioFallback } from "../services/ai/audio/AudioFallback";
+import { OpenAITTS } from "../services/ai/audio/OpenAITTS";
 
 interface GameProps {
   userToken: string;
+  openaiKey?: string;
   gameType: string;
   genreKey: string;
 }
 
-const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.ReactElement => {
+const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey }): React.ReactElement => {
 
   const option1 = useRef<HTMLButtonElement>(null);
   const option2 = useRef<HTMLButtonElement>(null);
@@ -37,6 +39,7 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
   const gameCarousel = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const { setUserToken, setOpenaiKey, setPollinationsToken, pollinationsToken, navigate } = useNavigation(); // Get setters and navigate
   const [voicesLoaded, setVoicesLoaded] = useState(false);
 
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -50,9 +53,26 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
 
   useEffect(() => {
     if (userToken) {
+      // Auth Error Handlers
+      const handleGeminiAuthError = () => {
+        console.warn("Invalidating Gemini Token");
+        setUserToken("");
+        navigate('apikey');
+      };
+
+      const handleOpenAIAuthError = () => {
+        console.warn("Invalidating OpenAI Key");
+        setOpenaiKey("");
+      };
+
+      const handlePollinationsAuthError = () => {
+        console.warn("Invalidating Pollinations Token");
+        setPollinationsToken("");
+      };
+
       // Text Generation Setup
-      const geminiFlash = new GeminiGenerator(userToken, "gemini-2.5-flash");
-      const geminiFlashLite = new GeminiGenerator(userToken, "gemini-2.5-flash-lite");
+      const geminiFlash = new GeminiGenerator(userToken, "gemini-2.5-flash", handleGeminiAuthError);
+      const geminiFlashLite = new GeminiGenerator(userToken, "gemini-2.5-flash-lite", handleGeminiAuthError);
       const pollinationsText = new PollinationsGenerator();
 
       const textFallback = new FallbackGenerator([
@@ -63,21 +83,29 @@ const Game: React.FC<GameProps> = ({ userToken, gameType, genreKey }): React.Rea
       setTextGenerator(textFallback);
 
       // Audio Generation Setup
-      // Priority: Pollinations -> Kokoro -> Gemini
       const pollinationsVoice = PollinationsTTS.getOpenAIVoiceForGenre(genreKey);
       console.log(`Using Pollinations Voice: ${pollinationsVoice} for genre: ${genreKey}`);
-      const pollinationsAudio = new PollinationsTTS(pollinationsVoice, genreKey);
-      const kokoroAudio = new KokoroTTS(language, genreKey);
-      const geminiAudio = new GeminiTTS(userToken);
 
-      const audioFallback = new AudioFallback([
-        pollinationsAudio,
-        kokoroAudio,
-        geminiAudio
-      ]);
+      const pollinationsAudio = new PollinationsTTS(pollinationsVoice, genreKey, pollinationsToken, handlePollinationsAuthError);
+      const kokoroAudio = new KokoroTTS(language, genreKey);
+      const geminiAudio = new GeminiTTS(userToken, handleGeminiAuthError);
+
+      const generators: AudioGenerator[] = [pollinationsAudio];
+
+      if (openaiKey && openaiKey.length > 5) {
+        console.log("Adding OpenAI TTS to fallback chain");
+        const openAIAudio = new OpenAITTS(openaiKey, genreKey, handleOpenAIAuthError);
+        generators.push(openAIAudio);
+      }
+
+      generators.push(kokoroAudio);
+      generators.push(geminiAudio);
+
+
+      const audioFallback = new AudioFallback(generators);
       setAudioGenerator(audioFallback);
     }
-  }, [userToken, language, genreKey]);
+  }, [userToken, openaiKey, pollinationsToken, language, genreKey]);
 
   // Audio state handled by useSmartAudio now
 

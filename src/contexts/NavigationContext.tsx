@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { ADVENTURE_TYPES } from '../resources/availableTypes';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export type Screen = 'apikey' | 'selection' | 'game';
 
@@ -9,6 +8,10 @@ interface NavigationContextType {
     goBack: () => void;
     userToken: string;
     setUserToken: (token: string) => void;
+    openaiKey: string;
+    setOpenaiKey: (key: string) => void;
+    pollinationsToken: string;
+    setPollinationsToken: (token: string) => void;
     selectedGenreIndex: number;
     setSelectedGenreIndex: (index: number) => void;
 }
@@ -17,10 +20,34 @@ const NavigationContext = createContext<NavigationContextType | undefined>(undef
 
 export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [screenStack, setScreenStack] = useState<Screen[]>(['apikey']);
-    const [userToken, setUserToken] = useState<string>("");
-    const [selectedGenreIndex, setSelectedGenreIndex] = useState<number>(0);
+
+    // Initialize from localStorage
+    const [userToken, setUserToken] = useState<string>(() => localStorage.getItem("adventure_forge_token") || "");
+    const [openaiKey, setOpenaiKey] = useState<string>(() => localStorage.getItem("adventure_forge_openai_key") || "");
+    const [pollinationsToken, setPollinationsToken] = useState<string>(() => localStorage.getItem("adventure_forge_pollinations_token") || "");
+    const [selectedGenreIndex, setSelectedGenreIndex] = useState<number>(() => {
+        const saved = localStorage.getItem("adventure_forge_genre_index");
+        return saved ? parseInt(saved, 10) : 0;
+    });
 
     const currentScreen = screenStack[screenStack.length - 1];
+
+    // Persistence Effects
+    useEffect(() => {
+        localStorage.setItem("adventure_forge_token", userToken);
+    }, [userToken]);
+
+    useEffect(() => {
+        localStorage.setItem("adventure_forge_openai_key", openaiKey);
+    }, [openaiKey]);
+
+    useEffect(() => {
+        localStorage.setItem("adventure_forge_pollinations_token", pollinationsToken);
+    }, [pollinationsToken]);
+
+    useEffect(() => {
+        localStorage.setItem("adventure_forge_genre_index", selectedGenreIndex.toString());
+    }, [selectedGenreIndex]);
 
     const navigate = (screen: Screen) => {
         setScreenStack(prev => [...prev, screen]);
@@ -42,6 +69,10 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
             goBack,
             userToken,
             setUserToken,
+            openaiKey,
+            setOpenaiKey,
+            pollinationsToken,
+            setPollinationsToken,
             selectedGenreIndex,
             setSelectedGenreIndex
         }}>

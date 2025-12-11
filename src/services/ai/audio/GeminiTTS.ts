@@ -4,10 +4,12 @@ import { GoogleGenAI } from "@google/genai";
 
 export class GeminiTTS implements AudioGenerator {
     private client: any;
+    private onUnauthorized?: () => void;
     public readonly shouldSplitText = false;
 
-    constructor(apiKey: string) {
+    constructor(apiKey: string, onUnauthorized?: () => void) {
         this.client = new GoogleGenAI({ apiKey });
+        this.onUnauthorized = onUnauthorized;
     }
 
     async generate(text: string): Promise<string | null> {
@@ -32,6 +34,13 @@ export class GeminiTTS implements AudioGenerator {
             return data;
         } catch (error: any) {
             console.warn("GeminiTTS failed:", error.message || error);
+
+            const errMsg = (error.message || "").toLowerCase();
+            if (errMsg.includes("403") || errMsg.includes("permission denied") || errMsg.includes("unauthenticated")) {
+                console.warn("Gemini Unauthorized. Clearing key.");
+                if (this.onUnauthorized) this.onUnauthorized();
+            }
+
             throw error;
         }
     }
