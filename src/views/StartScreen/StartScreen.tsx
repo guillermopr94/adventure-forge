@@ -5,7 +5,6 @@ import "./StartScreen.css";
 
 import { ADVENTURE_TYPES } from "../../common/resources/availableTypes";
 import { NavigationProvider, useNavigation } from "../../common/contexts/NavigationContext";
-import ApiKeyScreen from "../ApiKeyInput/ApiKeyScreen";
 import AdventureSelectionScreen from "../AdventureSelection/AdventureSelectionScreen";
 
 
@@ -45,8 +44,6 @@ const StartScreenContent = (): React.ReactElement => {
             {currentScreen !== 'game' ? (
                 <div className="start-screen-container">
                     <div id="welcome-message">{t("welcome")}</div>
-                    {/* ApiKeyScreen is effectively skipped by NavigationContext default, but kept for legacy or explicit nav if needed */}
-                    {currentScreen === 'apikey' && <ApiKeyScreen />}
                     {currentScreen === 'selection' && <AdventureSelectionScreen />}
                 </div>
             ) : (
