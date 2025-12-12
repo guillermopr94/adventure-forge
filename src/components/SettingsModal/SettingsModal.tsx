@@ -5,6 +5,7 @@ import { useNavigation } from '../../contexts/NavigationContext';
 import { useTranslation } from '../../language/LanguageContext';
 import { IoClose, IoHome } from 'react-icons/io5';
 import { ADVENTURE_TYPES } from '../../resources/availableTypes';
+import { themes } from '../../theme/themes';
 
 const SettingsModal: React.FC = () => {
     const { showSettings, setShowSettings, musicVolume, setMusicVolume, sfxVolume, setSfxVolume } = useSettings();
@@ -25,21 +26,18 @@ const SettingsModal: React.FC = () => {
         // Go back to selection screen
         navigate('selection');
         setShowSettings(false);
-        // We might want to stop specific game logic here if needed, 
-        // but navigating away usually unmounts Game component.
     };
 
-
-
-    // Get current genre style
     // Get current genre style
     const selectedGenre = ADVENTURE_TYPES[selectedGenreIndex];
-    const themeColor = selectedGenre?.color || '#ffffff';
-    const textColor = selectedGenre?.textColor || '#ffffff';
+    const activeTheme = themes[selectedGenre.id];
+    const themeColor = activeTheme.primaryColor;
+    const textColor = activeTheme.textColor;
+    const font = activeTheme.fontHeading;
 
     // Dynamic styles based on genre
     const modalStyle: React.CSSProperties = {
-        fontFamily: selectedGenre?.font || 'inherit',
+        fontFamily: font || 'inherit',
         border: `2px solid ${themeColor}`,
         boxShadow: `0 0 20px ${themeColor}80`
     };

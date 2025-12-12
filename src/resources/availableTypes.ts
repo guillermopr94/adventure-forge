@@ -16,57 +16,33 @@ export interface AdventureType {
     id: AdventureGenre;
     icon: string;
     music: string;
-    className?: string; // Kept for legacy CSS classes
-    font?: string;      // Specific font family
-    color?: string;     // Accent color (borders, active tabs)
-    textColor?: string; // Text color (headers)
 }
 
 export const ADVENTURE_TYPES: AdventureType[] = [
     {
         id: AdventureGenre.FANTASY,
         icon: fantasyIcon,
-        music: process.env.PUBLIC_URL + "/music/fantasy.m4a",
-        className: "fantasyTheme",
-        font: "'Cinzel', serif",
-        color: "#ffd700",
-        textColor: "#f0e6d2"
+        music: process.env.PUBLIC_URL + "/music/fantasy.m4a"
     },
     {
         id: AdventureGenre.SCIFI,
         icon: scifiIcon,
-        music: process.env.PUBLIC_URL + "/music/scifi.m4a",
-        className: "scifiTheme",
-        font: "'Orbitron', sans-serif",
-        color: "#00ff9d",
-        textColor: "#e0faff"
+        music: process.env.PUBLIC_URL + "/music/scifi.m4a"
     },
     {
         id: AdventureGenre.HORROR,
         icon: horrorIcon,
-        music: process.env.PUBLIC_URL + "/music/horror.m4a",
-        className: "horrorTheme",
-        font: "'Creepster', cursive", // Or a scary serif
-        color: "#ff3333",
-        textColor: "#ffdddd"
+        music: process.env.PUBLIC_URL + "/music/horror.m4a"
     },
     {
         id: AdventureGenre.SUPERHEROES,
         icon: superheroesIcon,
-        music: process.env.PUBLIC_URL + "/music/superheroes.m4a",
-        className: "superheroesTheme",
-        font: "'Bangers', cursive", // Comic style
-        color: "#00ccff",
-        textColor: "#ffffff"
+        music: process.env.PUBLIC_URL + "/music/superheroes.m4a"
     },
     {
         id: AdventureGenre.ROMANCE,
         icon: romanceIcon,
-        music: process.env.PUBLIC_URL + "/music/romance.m4a",
-        className: "romanceTheme",
-        font: "'Dancing Script', cursive",
-        color: "#ff66b2",
-        textColor: "#fff0f5"
+        music: process.env.PUBLIC_URL + "/music/romance.m4a"
     }
 ];
 
