@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import './SettingsModal.css';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useNavigation } from '../../contexts/NavigationContext';
-import { useTranslation } from '../../language/LanguageContext';
+import { useSettings } from '../../../contexts/SettingsContext';
+import { useNavigation } from '../../../contexts/NavigationContext';
+import { useTranslation } from '../../../language/LanguageContext';
 import { IoClose, IoHome } from 'react-icons/io5';
-import { ADVENTURE_TYPES } from '../../resources/availableTypes';
-import { themes } from '../../theme/themes';
+import { ADVENTURE_TYPES } from '../../../resources/availableTypes';
+import { themes } from '../../../theme/themes';
 
 const SettingsModal: React.FC = () => {
     const { showSettings, setShowSettings, musicVolume, setMusicVolume, sfxVolume, setSfxVolume } = useSettings();

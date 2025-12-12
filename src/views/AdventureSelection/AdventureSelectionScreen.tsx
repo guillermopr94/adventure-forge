@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { useTranslation } from '../language/LanguageContext';
-import { useTheme } from '../theme/ThemeContext';
-import { useNavigation } from '../contexts/NavigationContext';
-import { ADVENTURE_TYPES } from '../resources/availableTypes';
+import { useTranslation } from '../../common/language/LanguageContext';
+import { useTheme } from '../../common/theme/ThemeContext';
+import { useNavigation } from '../../common/contexts/NavigationContext';
+import { ADVENTURE_TYPES } from '../../common/resources/availableTypes';
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 const AdventureSelectionScreen: React.FC = () => {

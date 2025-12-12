@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { useSettings } from '../contexts/SettingsContext';
+import { useSettings } from '../../contexts/SettingsContext';
 
 interface BackgroundMusicProps {
     audioFile: string;

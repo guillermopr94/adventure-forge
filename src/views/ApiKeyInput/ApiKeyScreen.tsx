@@ -1,7 +1,7 @@
 import React from 'react';
-import { useTranslation } from '../language/LanguageContext';
-import LanguageSelector from '../language/LanguageSelector';
-import { useNavigation } from '../contexts/NavigationContext';
+import { useTranslation } from '../../common/language/LanguageContext';
+import LanguageSelector from '../../common/language/LanguageSelector';
+import { useNavigation } from '../../common/contexts/NavigationContext';
 
 const ApiKeyScreen: React.FC = () => {
     const { t, setLanguage } = useTranslation();

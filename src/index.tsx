@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { LanguageProvider } from "./language/LanguageContext";
-import { ThemeProvider } from "./theme/ThemeContext";
-import StartScreen from "./startScreen/StartScreen";
+import { LanguageProvider } from "./common/language/LanguageContext";
+import { ThemeProvider } from "./common/theme/ThemeContext";
+import StartScreen from "./views/StartScreen/StartScreen";
 
 ReactDOM.render(
   <React.StrictMode>

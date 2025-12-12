@@ -1,19 +1,19 @@
 import React, { useRef, useEffect, useState } from "react";
-import { config } from "../config";
-import { useSmartAudio } from "../hooks/useSmartAudio";
-import { useLanguage, useTranslation } from "../language/LanguageContext";
-import { useNavigation } from "../contexts/NavigationContext";
+import { config } from "../../common/config/config";
+import { useSmartAudio } from "../../common/hooks/useSmartAudio";
+import { useLanguage, useTranslation } from "../../common/language/LanguageContext";
+import { useNavigation } from "../../common/contexts/NavigationContext";
 import "./Game.css";
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
-import TextNarrator from "../textNarrator/TextNarrator";
+import TextNarrator from "../../common/components/TextNarrator/TextNarrator";
 import { FiRotateCw } from 'react-icons/fi';
-import BackgroundMusic from "../backgroundMusic/BackgroundMusic";
+import BackgroundMusic from "../../common/components/BackgroundMusic/BackgroundMusic";
 
 
-import Typewriter from "./Typewriter";
-import { getAdventureType } from "../resources/availableTypes";
-import { AudioGenerator } from "../services/ai/AudioGenerator";
+import Typewriter from "./components/Typewriter";
+import { getAdventureType } from "../../common/resources/availableTypes";
+import { AudioGenerator } from "../../common/services/ai/AudioGenerator";
 
 
 interface GameProps {

@@ -1,16 +1,16 @@
 import React from "react";
-import Game from "../game/Game";
-import { useTranslation } from "../language/LanguageContext";
+import Game from "../Game/Game";
+import { useTranslation } from "../../common/language/LanguageContext";
 import "./StartScreen.css";
 
-import { ADVENTURE_TYPES } from "../resources/availableTypes";
-import { NavigationProvider, useNavigation } from "../contexts/NavigationContext";
-import ApiKeyScreen from "../screens/ApiKeyScreen";
-import AdventureSelectionScreen from "../screens/AdventureSelectionScreen";
+import { ADVENTURE_TYPES } from "../../common/resources/availableTypes";
+import { NavigationProvider, useNavigation } from "../../common/contexts/NavigationContext";
+import ApiKeyScreen from "../ApiKeyInput/ApiKeyScreen";
+import AdventureSelectionScreen from "../AdventureSelection/AdventureSelectionScreen";
 
 
-import { SettingsProvider, useSettings } from "../contexts/SettingsContext";
-import SettingsModal from "../components/SettingsModal/SettingsModal";
+import { SettingsProvider, useSettings } from "../../common/contexts/SettingsContext";
+import SettingsModal from "../../common/components/modals/SettingsModal/SettingsModal";
 import { IoSettingsSharp } from "react-icons/io5";
 
 const StartScreen = (): React.ReactElement => {
