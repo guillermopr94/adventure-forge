@@ -13,7 +13,6 @@ import BackgroundMusic from "../backgroundMusic/BackgroundMusic";
 
 import Typewriter from "./Typewriter";
 import { getAdventureType } from "../resources/availableTypes";
-import { TextGenerator } from "../services/ai/TextGenerator";
 import { AudioGenerator } from "../services/ai/AudioGenerator";
 
 
