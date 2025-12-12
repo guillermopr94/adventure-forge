@@ -29,9 +29,9 @@ const ApiKeyScreen: React.FC = () => {
 
     function handleTokenSubmit(event: React.FormEvent) {
         event.preventDefault();
-        if (userToken.trim() !== "") {
-            navigate('selection');
-        }
+        // if (userToken.trim() !== "") {
+        navigate('selection');
+        // }
     }
 
     return (
@@ -44,7 +44,7 @@ const ApiKeyScreen: React.FC = () => {
                         value={userToken}
                         onChange={handleTokenChange}
                         placeholder="Google API Key"
-                        required
+                        // required
                         className="modern-input"
                     />
                     <input

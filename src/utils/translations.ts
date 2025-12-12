@@ -28,7 +28,15 @@ const translations = {
         loadingText: "Forging your destiny...",
         reset: "New Adventure",
         select_genre: "Select your Adventure",
-        enter_token: "Enter your Google AI Studio API Key"
+        enter_token: "Enter your Google AI Studio API Key",
+        settings: "Settings",
+        music_volume: "Music Volume",
+        narrator_volume: "Narrator Volume",
+        language: "Language",
+        new_game: "New Game",
+        google_api_key_label: "Google Gemini API Key",
+        openai_api_key_label: "OpenAI API Key",
+        pollinations_token_label: "Pollinations Token"
     },
     es: {
         welcome: "Bienvenido a AdventureForge",
@@ -53,7 +61,15 @@ const translations = {
         loadingText: "Forjando tu destino...",
         reset: "Nueva Aventura",
         select_genre: "Elige tu Aventura",
-        enter_token: "Introduce tu API Key de Google AI Studio"
+        enter_token: "Introduce tu API Key de Google AI Studio",
+        settings: "Configuración",
+        music_volume: "Volumen de Música",
+        narrator_volume: "Volumen del Narrador",
+        language: "Idioma",
+        new_game: "Nuevo Juego",
+        google_api_key_label: "Clave API de Google Gemini",
+        openai_api_key_label: "Clave API de OpenAI",
+        pollinations_token_label: "Token de Pollinations"
     },
 };
 

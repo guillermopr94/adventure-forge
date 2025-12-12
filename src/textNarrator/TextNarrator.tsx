@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { FiVolume2, FiVolumeX } from 'react-icons/fi';
+import React, { useRef, useEffect } from 'react';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface TextNarratorProps {
     text: string;
@@ -10,10 +10,7 @@ interface TextNarratorProps {
 }
 
 const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isLoadingAudio, onComplete }) => {
-    const [isMuted, setIsMuted] = useState(false);
-    const [showVolumeSlider, setShowVolumeSlider] = useState(false);
-    const [volume, setVolume] = useState(1);
-    const containerRef = useRef<HTMLDivElement | null>(null);
+    const { sfxVolume } = useSettings();
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Helper to convert base64 to ArrayBuffer
@@ -59,11 +56,6 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
     const hasWavHeader = (buffer: ArrayBuffer) => {
         if (buffer.byteLength < 44) return false;
         const view = new DataView(buffer);
-        // Check for 'RIFF' at start (0x52494646) and 'WAVE' at offset 8 (0x57415645)
-        // IDs are big-endian in the file, but DataView checks endianness depending on flag.
-        // Actually ASCII chars are single bytes so endianness doesn't matter for the byte sequence if reading byte by byte.
-        // But reading as Uint32 requires care.
-        // 'R' 'I' 'F' 'F' is 0x52 0x49 0x46 0x46
         return (
             view.getUint8(0) === 0x52 &&
             view.getUint8(1) === 0x49 &&
@@ -76,16 +68,13 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
         );
     };
 
-    // Helper to identify MP3 header (ID3 or Frame Sync)
+    // Helper to identify MP3 header
     const isMp3 = (buffer: ArrayBuffer) => {
         if (buffer.byteLength < 3) return false;
         const view = new DataView(buffer);
-        // Check for ID3 tag (ID3)
         if (view.getUint8(0) === 0x49 && view.getUint8(1) === 0x44 && view.getUint8(2) === 0x33) {
             return true;
         }
-        // Check for frame sync (approximate, usually FFFB or FFF3)
-        // This is less reliable without parsing, but sufficient for common mismatch
         if (view.getUint16(0) >= 0xFFE0) {
             return true;
         }
@@ -114,7 +103,7 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
                     blobParts = [audioBuffer];
                     mimeType = 'audio/mpeg';
                 } else {
-                    // Assume raw PCM 16-bit 24kHz mono (Kokoro default?)
+                    // Assume raw PCM 16-bit 24kHz mono
                     const wavHeader = createWavHeader(audioBuffer.byteLength);
                     blobParts = [wavHeader, audioBuffer];
                 }
@@ -123,30 +112,28 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
                 const audioUrl = URL.createObjectURL(audioBlob);
 
                 const audio = new Audio(audioUrl);
-                audio.volume = volume;
+                audio.volume = sfxVolume;
                 audio.onended = () => {
                     onComplete && onComplete();
                 };
                 audioRef.current = audio;
 
-                if (!isMuted) {
-                    audio.play().catch(e => console.error("Error playing audio:", e));
-                }
+                audio.play().catch(e => console.error("Error playing audio:", e));
+
             } catch (e) {
                 console.error("Error processing audio data:", e);
-                // If error, trigger complete safely?
                 onComplete && onComplete();
             }
 
         } else if (voice && !isLoadingAudio) {
-            // Fallback to speech synthesis if no audioData but voice is present AND we are not waiting for audio
-            speak(text, voice, volume);
+            // Fallback to speech synthesis
+            speak(text, voice, sfxVolume);
         }
 
         return () => {
             if (audioRef.current) {
                 audioRef.current.pause();
-                audioRef.current.onended = null; // Cleanup
+                audioRef.current.onended = null;
             }
             speechSynthesis.cancel();
         };
@@ -155,9 +142,9 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
     // Update volume for active audio
     useEffect(() => {
         if (audioRef.current) {
-            audioRef.current.volume = volume;
+            audioRef.current.volume = sfxVolume;
         }
-    }, [volume]);
+    }, [sfxVolume]);
 
 
     const splitTextIntoChunks = (text: string, maxChunkSize: number) => {
@@ -186,7 +173,7 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
     };
 
     const speak = (text: string, voice: SpeechSynthesisVoice, volume: number) => {
-        if (audioData) return; // Don't speak if we have audio data
+        if (audioData) return;
 
         window.utterances = [];
         speechSynthesis.cancel();
@@ -206,7 +193,6 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
 
                 speechSynthesis.speak(utterance);
             } else {
-                // All chunks finished
                 onComplete && onComplete();
             }
         };
@@ -214,75 +200,9 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
         speakChunk(0);
     };
 
-    const handleToggleMute = () => {
-        if (showVolumeSlider) {
-            setIsMuted(!isMuted);
-            if (audioRef.current) {
-                if (!isMuted) { // If we are muting
-                    audioRef.current.pause();
-                } else { // If we are unmuting
-                    audioRef.current.play().catch(e => console.error(e));
-                }
-            } else {
-                if (isMuted) {
-                    speechSynthesis.resume();
-                } else {
-                    speechSynthesis.pause();
-                }
-            }
-
-        } else {
-            setShowVolumeSlider(true);
-        }
-    };
-
-    const handleClickOutside = (event: MouseEvent) => {
-        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-            setShowVolumeSlider(false);
-        }
-    };
-
-    const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const newVolume = parseFloat(event.target.value);
-        setVolume(newVolume);
-
-        if (!audioData && voice) {
-            speechSynthesis.cancel();
-            speak(text, voice, newVolume);
-        }
-    };
-
-    useEffect(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
     return (
-        <div ref={containerRef} style={{ display: 'inline-block', position: 'relative' }}>
-            <button onClick={handleToggleMute} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                {isMuted ? <FiVolumeX color="white" size={35} /> : <FiVolume2 color="white" size={35} />}
-            </button>
-            {showVolumeSlider && (
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={volume}
-                    onChange={handleVolumeChange}
-                    style={{
-                        position: 'absolute',
-                        right: '45%',
-                        bottom: 'calc(100% + 40px)',
-                        width: '100px',
-                        transform: 'translateX(50%) rotate(-90deg)',
-                        cursor: 'pointer',
-                        zIndex: 1000,
-                    }}
-                />
-            )}
+        <div style={{ display: 'none' }}>
+            {/* UI Removed: Controlled by Settings Menu */}
         </div>
     );
 };

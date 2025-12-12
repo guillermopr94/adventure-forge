@@ -12,7 +12,12 @@ const LanguageContext = createContext<{
 export const useLanguage = () => useContext(LanguageContext);
 
 export const LanguageProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-    const [language, setLanguage] = useState('en');
+    const [language, setLanguage] = useState(localStorage.getItem('language') || 'en');
+
+    useEffect(() => {
+        localStorage.setItem('language', language);
+    }, [language]);
+
     return (
         <LanguageContext.Provider value={{ language, setLanguage }}>
             {children}
@@ -43,6 +48,7 @@ export function useTranslation() {
 
     return {
         t,
+        language, // Expose language
         setLanguage,
     };
 }

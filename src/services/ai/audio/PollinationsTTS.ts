@@ -1,10 +1,12 @@
 import { AudioGenerator } from "../AudioGenerator";
 import { AdventureGenre } from "../../../resources/availableTypes";
+import { config } from "../../../config";
 
 export class PollinationsTTS implements AudioGenerator {
     private voice: string;
     private genre: string;
     public readonly shouldSplitText = false;
+    private baseUrl: string = `${config.apiUrl}/ai/audio`;
 
     private token?: string;
     private onUnauthorized?: () => void;
@@ -12,7 +14,7 @@ export class PollinationsTTS implements AudioGenerator {
     constructor(voice: string = "alloy", genre: string = "fantasy", token?: string, onUnauthorized?: () => void) {
         this.voice = voice;
         this.genre = genre;
-        this.token = token;
+        this.token = token; // Can be undefined
         this.onUnauthorized = onUnauthorized;
     }
 
@@ -27,75 +29,47 @@ export class PollinationsTTS implements AudioGenerator {
         }
     }
 
-    private getStyleInstructions(genre: string): string {
-        switch (genre.toLowerCase()) {
-            case AdventureGenre.FANTASY:
-                return "Voice: Grand Storyteller. Tone: Epic, magical, and immersive. Delivery: Paced, dramatic, and clear. Pronunciation: Clear and distinct.";
-            case AdventureGenre.SCIFI:
-                return "Voice: AI Interface. Tone: Analytical, futuristic, and precise. Delivery: Clean, slightly processed, and rapid but clear.";
-            case AdventureGenre.HORROR:
-                return "Voice: Narrator of Dread. Tone: Ominous, whispering, and suspenseful. Delivery: Slow, deliberate, and terrifying.";
-            case AdventureGenre.SUPERHEROES:
-                return "Voice: Action Narrator. Tone: Heroic, urgent, and energetic. Delivery: Dynamic, punchy, and impactful.";
-            case AdventureGenre.ROMANCE:
-                return "Voice: Intimate Narrator. Tone: Soft, emotional, and warm. Delivery: Gentle, smooth, and heartfelt.";
-            default:
-                return "Voice: Clear Narrator. Tone: Engaging and natural.";
-        }
-    }
-
     async generate(text: string): Promise<string | null> {
         try {
-            console.log("PollinationsTTS: Generating audio via GET with instructions...");
+            console.log("PollinationsTTS: Generating audio via Backend...");
 
-            const instructions = this.getStyleInstructions(this.genre);
-            // Construct prompt: Instructions + Command to read text
-            const prompt = `${instructions} Say exactly this: ${text}`;
-
-            const encodedText = encodeURIComponent(prompt);
-            let url = "";
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
 
             if (this.token) {
-                // Use authenticated endpoint if token is present
-                // Docs: https://enter.pollinations.ai/api/docs
-                url = `https://gen.pollinations.ai/text/${encodedText}?model=openai-audio&voice=${this.voice}&key=${this.token}`;
-            } else {
-                // Fallback to free tier facade
-                url = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=${this.voice}`;
+                headers['x-pollinations-token'] = this.token;
             }
 
-            const headers: HeadersInit = {};
-            if (this.token) {
-                headers['Authorization'] = `Bearer ${this.token}`;
-            }
-
-            const response = await fetch(url, { headers });
-
-            if (response.status === 401 || response.status === 403) {
-                console.warn("Pollinations Unauthorized. Clearing token.");
-                if (this.onUnauthorized) this.onUnauthorized();
-            }
-
-            if (!response.ok) throw new Error(`Pollinations TTS error: ${response.statusText}`);
-
-            const blob = await response.blob();
-
-            // Convert Blob to Base64 using FileReader (Browser compatible)
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    if (typeof reader.result === 'string') {
-                        // Get base64 content only
-                        resolve(reader.result.split(',')[1]);
-                    } else {
-                        reject(new Error("Failed to convert blob to base64 string"));
-                    }
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
+            const response = await fetch(this.baseUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    text,
+                    provider: 'pollinations',
+                    voice: this.voice,
+                    genre: this.genre
+                })
             });
+
+            if (response.status === 403 || response.status === 401) {
+                console.warn("Pollinations Unauthorized (Backend). Clearing key.");
+                if (this.onUnauthorized) this.onUnauthorized();
+                // We don't throw immediately, maybe we can fallback?
+                // But generally error is thrown.
+            }
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Backend Error: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            if (!data.audio) throw new Error("Backend returned no audio data");
+
+            return data.audio; // Base64
         } catch (error: any) {
-            console.warn("PollinationsTTS GET failed:", error.message || error);
+            console.warn("PollinationsTTS failed:", error.message || error);
             throw error;
         }
     }

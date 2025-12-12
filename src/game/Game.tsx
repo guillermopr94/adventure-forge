@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import { config } from "../config";
 import { useSmartAudio } from "../hooks/useSmartAudio";
 import { useLanguage, useTranslation } from "../language/LanguageContext";
 import { useNavigation } from "../contexts/NavigationContext";
@@ -8,19 +9,13 @@ import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import TextNarrator from "../textNarrator/TextNarrator";
 import { FiRotateCw } from 'react-icons/fi';
 import BackgroundMusic from "../backgroundMusic/BackgroundMusic";
-import { GoogleGenAI } from "@google/genai";
+
+
 import Typewriter from "./Typewriter";
 import { getAdventureType } from "../resources/availableTypes";
 import { TextGenerator } from "../services/ai/TextGenerator";
-import { GeminiGenerator } from "../services/ai/GeminiGenerator";
-import { PollinationsGenerator } from "../services/ai/PollinationsGenerator";
-import { FallbackGenerator } from "../services/ai/FallbackGenerator";
 import { AudioGenerator } from "../services/ai/AudioGenerator";
-import { PollinationsTTS } from "../services/ai/audio/PollinationsTTS";
-import { KokoroTTS } from "../services/ai/audio/KokoroTTS";
-import { GeminiTTS } from "../services/ai/audio/GeminiTTS";
-import { AudioFallback } from "../services/ai/audio/AudioFallback";
-import { OpenAITTS } from "../services/ai/audio/OpenAITTS";
+
 
 interface GameProps {
   userToken: string;
@@ -46,67 +41,6 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   const [gameContent, setGameContent] = useState<string[]>([]);
   const [actualContent, setActualContent] = useState<string | null>(null);
 
-  // AI Service Initialization
-  const [genAIClient, setGenAIClient] = useState<any>(null);
-  const [textGenerator, setTextGenerator] = useState<TextGenerator | null>(null);
-  const [audioGenerator, setAudioGenerator] = useState<AudioGenerator | null>(null);
-
-  useEffect(() => {
-    if (userToken) {
-      // Auth Error Handlers
-      const handleGeminiAuthError = () => {
-        console.warn("Invalidating Gemini Token");
-        setUserToken("");
-        navigate('apikey');
-      };
-
-      const handleOpenAIAuthError = () => {
-        console.warn("Invalidating OpenAI Key");
-        setOpenaiKey("");
-      };
-
-      const handlePollinationsAuthError = () => {
-        console.warn("Invalidating Pollinations Token");
-        setPollinationsToken("");
-      };
-
-      // Text Generation Setup
-      const geminiFlash = new GeminiGenerator(userToken, "gemini-2.5-flash", handleGeminiAuthError);
-      const geminiFlashLite = new GeminiGenerator(userToken, "gemini-2.5-flash-lite", handleGeminiAuthError);
-      const pollinationsText = new PollinationsGenerator(pollinationsToken, handlePollinationsAuthError);
-
-      const textFallback = new FallbackGenerator([
-        geminiFlash,
-        geminiFlashLite,
-        pollinationsText
-      ]);
-      setTextGenerator(textFallback);
-
-      // Audio Generation Setup
-      const pollinationsVoice = PollinationsTTS.getOpenAIVoiceForGenre(genreKey);
-      console.log(`Using Pollinations Voice: ${pollinationsVoice} for genre: ${genreKey}`);
-
-      const pollinationsAudio = new PollinationsTTS(pollinationsVoice, genreKey, pollinationsToken, handlePollinationsAuthError);
-      const kokoroAudio = new KokoroTTS(language, genreKey);
-      const geminiAudio = new GeminiTTS(userToken, handleGeminiAuthError);
-
-      const generators: AudioGenerator[] = [pollinationsAudio];
-
-      if (openaiKey && openaiKey.length > 5) {
-        console.log("Adding OpenAI TTS to fallback chain");
-        const openAIAudio = new OpenAITTS(openaiKey, genreKey, handleOpenAIAuthError);
-        generators.push(openAIAudio);
-      }
-
-      generators.push(kokoroAudio);
-      generators.push(geminiAudio);
-
-
-      const audioFallback = new AudioFallback(generators);
-      setAudioGenerator(audioFallback);
-    }
-  }, [userToken, openaiKey, pollinationsToken, language, genreKey]);
-
   // Audio state handled by useSmartAudio now
 
 
@@ -130,6 +64,45 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   }, []);
 
   const selectedVoice = voices.find((voice) => voice.lang.startsWith(language));
+
+  // AI Service Initialization
+  const [isGameStarted, setIsGameStarted] = useState(false);
+  const [audioGenerator, setAudioGenerator] = useState<AudioGenerator | null>(null);
+
+  useEffect(() => {
+    // Define a simple backend audio generator
+    const backendAudioGenerator: AudioGenerator = {
+      shouldSplitText: false, // Let backend handle full text or simple chunks
+      generate: async (text: string) => {
+        try {
+          console.log("Requesting Audio from Backend...");
+          const response = await fetch(`${config.apiUrl}/ai/audio`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-google-api-key': userToken,
+              'x-pollinations-token': pollinationsToken,
+              'x-openai-api-key': openaiKey || ''
+            },
+            body: JSON.stringify({
+              text,
+              voice: selectedVoice?.name || 'alloy',
+              genre: genreKey,
+              lang: language
+            })
+          });
+          if (!response.ok) throw new Error("Backend Audio Failed");
+          const data = await response.json();
+          return data.audio;
+        } catch (e) {
+          console.warn("Backend Audio Error:", e);
+          return null;
+        }
+      }
+    };
+    setAudioGenerator(backendAudioGenerator);
+
+  }, [userToken, openaiKey, pollinationsToken, language, genreKey, selectedVoice]);
 
   // Hook for Smart Audio (Split & Stream)
   const {
@@ -219,6 +192,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
 
   async function startGame() {
+    setIsGameStarted(true);
     toggleSpinner(true);
     toggleOptions(false);
     setActualContent(null);
@@ -337,7 +311,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
     // We rely on visualText to update the main content. 
     // If there is extra content appended (like "Restart"), handle it?
-    // Actually, playText only plays the model response.
+    // Actually, playText only plays the model response. 
     // If we manually append, we should update visualText via effect? 
     // Or just let it be. 'playText' drives the audio. 
     // If we want the restart text to appear, we should probably append it to the text passed to playText?
@@ -359,99 +333,55 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   async function generateGameImage(text: string) {
     const imagePrompt = `Scene description: ${text}. Style: ${gameType} digital art, immersive, atmospheric, highly detailed.`;
 
-    // Strategy 1: Try Gemini Imagen (High Quality, requires billing)
-    let imageUrl = await generateImagen(imagePrompt);
+    try {
+      console.log("Requesting Image from Backend...");
+      const response = await fetch(`${config.apiUrl}/ai/image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-google-api-key': userToken
+        },
+        body: JSON.stringify({ prompt: imagePrompt })
+      });
 
-    // Strategy 2: Fallback to Pollinations.ai (Free, reliable)
-    if (!imageUrl) {
-      console.log("Fallback to Pollinations.ai...");
-      imageUrl = await generatePollinations(imagePrompt);
-    }
-
-    if (imageUrl) {
-      setCurrentImage(imageUrl);
-    } else {
-      console.warn("All image generation strategies failed.");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.image) setCurrentImage(data.image);
+      } else {
+        console.warn("Backend Image Failed");
+        setCurrentImage(null);
+      }
+    } catch (e) {
+      console.warn("Backend Image Error:", e);
       setCurrentImage(null);
     }
   }
 
-  async function generateImagen(imagePrompt: string): Promise<string | null> {
-    try {
-      let client = genAIClient;
-      if (!client) {
-        client = new GoogleGenAI({ apiKey: userToken });
-        setGenAIClient(client);
-      }
-
-      console.log("Attempting Gemini Flash Image generation...");
-
-      // Use the Nano Banana model (gemini-2.5-flash-image) which supports generateContent
-      const response = await client.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
-        contents: {
-          parts: [
-            { text: imagePrompt }
-          ]
-        }
-      });
-
-      // Extract image data from parts
-      if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData && part.inlineData.data) {
-            // The SDK usually returns standard base64 in inlineData.data
-            return `data:image/png;base64,${part.inlineData.data}`;
-          }
-        }
-      }
-
-    } catch (error: any) {
-      console.warn("Gemini Flash Image generation failed:", error.message || error);
-    }
-    return null;
-  }
-
-  async function generatePollinations(prompt: string): Promise<string | null> {
-    try {
-      console.log("Attempting Pollinations.ai generation...");
-      const encodedPrompt = encodeURIComponent(prompt);
-      const seed = Math.floor(Math.random() * 10000);
-      const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}&width=800&height=450&model=flux`;
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Pollinations API error: ${response.statusText}`);
-
-      const blob = await response.blob();
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error("Pollinations generation failed:", error);
-      return null;
-    }
-  }
-
-
-
-
-
-
+  // Removed old generateImagen / generatePollinations functions
 
 
   async function fetchGeminiResponse(prompt: string): Promise<string> {
-    if (!textGenerator) {
-      console.error("TextGenerator not initialized");
-      return "Error: AI Service not initialized.";
-    }
-
     try {
-      return await textGenerator.generate(prompt, gameHistory);
-    } catch (error) {
-      console.error("All AI services failed:", error);
-      return "Error: Could not connect to any AI service. Please check your internet connection and try again.";
+      const response = await fetch(`${config.apiUrl}/ai/text`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-google-api-key': userToken,
+          'x-pollinations-token': pollinationsToken
+        },
+        body: JSON.stringify({
+          prompt,
+          history: gameHistory
+          // Model selection is handled by the backend now
+        })
+      });
+
+      if (!response.ok) throw new Error("Backend Text Failed");
+      const data = await response.json();
+      return data.text;
+    } catch (e) {
+      console.error("Backend Text Error:", e);
+      return "Error: Could not connect to any AI service. Please check your internet connection.";
     }
   }
 
@@ -459,7 +389,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     window.speechSynthesis.cancel();
     toggleOptions(false);
     setGameContent([]);
-    setGenAIClient(null); // Reset client to force re-initialization
+    setIsGameStarted(false); // Reset game started state
     setGameHistory([
       {
         role: "user",
@@ -478,7 +408,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   }, [voicesLoaded]);
 
   const initializeGame = () => {
-    if (voicesLoaded && !genAIClient) { // Only start if voices are loaded and client is not yet initialized
+    if (voicesLoaded && !isGameStarted) { // Only start if voices are loaded and not started
       startGame();
     }
   };
@@ -492,29 +422,17 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   return (
     <>
-      <div className="tools-buttons-container">
+      <BackgroundMusic audioFile={audioFile} />
 
-        {/* Back Button */}
-        <button onClick={handleExit} style={{ background: 'none', border: 'none', cursor: 'pointer', marginRight: '10px' }} title={t("back_to_menu") || "Back"}>
-          <span style={{ fontSize: '30px', color: 'white' }}>←</span>
-        </button>
-
-        <div>
-          <BackgroundMusic audioFile={audioFile} />
-          {(voicesLoaded && actualContent != null) && (
-            <TextNarrator
-              text={actualContent}
-              voice={selectedVoice}
-              audioData={audioData}
-              isLoadingAudio={isLoadingAudio}
-              onComplete={onAudioComplete}
-            />
-          )}
-        </div>
-        <button onClick={resetGame} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-          <FiRotateCw color="white" size={30} />
-        </button >
-      </div>
+      {(voicesLoaded && actualContent != null) && (
+        <TextNarrator
+          text={actualContent}
+          voice={selectedVoice}
+          audioData={audioData}
+          isLoadingAudio={isLoadingAudio}
+          onComplete={onAudioComplete}
+        />
+      )}
       <div ref={gameCarousel}>
         {currentImage && (
           <div className="game-image-container fade-in">

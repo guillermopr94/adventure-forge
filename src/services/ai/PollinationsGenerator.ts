@@ -3,6 +3,7 @@ import { TextGenerator } from "./TextGenerator";
 export class PollinationsGenerator implements TextGenerator {
     private token?: string;
     private onUnauthorized?: () => void;
+    private baseUrl: string = "http://localhost:3001/ai/text";
 
     constructor(token?: string, onUnauthorized?: () => void) {
         this.token = token;
@@ -11,42 +12,36 @@ export class PollinationsGenerator implements TextGenerator {
 
     async generate(prompt: string, history: any[]): Promise<string> {
         try {
-            console.log("PollinationsGenerator: Generating...");
+            console.log("PollinationsGenerator: Generating via Backend...");
 
-            let fullPrompt = "";
-            history.forEach(msg => {
-                const text = msg.parts ? msg.parts[0].text : "";
-                fullPrompt += `${msg.role === 'user' ? 'User' : 'Model'}: ${text}\n`;
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
+            if (this.token) {
+                headers['x-pollinations-token'] = this.token;
+            }
+
+            const response = await fetch(this.baseUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    prompt,
+                    history,
+                    provider: 'pollinations'
+                })
             });
-            fullPrompt += `User: ${prompt}\nModel:`;
-
-            const encodedPrompt = encodeURIComponent(fullPrompt);
-            let url = "";
-
-            if (this.token) {
-                url = `https://gen.pollinations.ai/text/${encodedPrompt}?key=${this.token}`;
-            } else {
-                url = `https://text.pollinations.ai/${encodedPrompt}`;
-            }
-
-            const headers: HeadersInit = {};
-            if (this.token) {
-                headers['Authorization'] = `Bearer ${this.token}`;
-            }
-
-            const response = await fetch(url, { headers });
 
             if (response.status === 401 || response.status === 403) {
                 console.warn("PollinationsGenerator Unauthorized. Clearing token.");
                 if (this.onUnauthorized) this.onUnauthorized();
             }
 
-            if (!response.ok) throw new Error(`Pollinations API error: ${response.statusText}`);
+            if (!response.ok) throw new Error(`Backend Error: ${response.status} - ${response.statusText}`);
 
-            const text = await response.text();
-            if (!text) throw new Error("Empty response from Pollinations");
+            const data = await response.json();
+            if (!data.text) throw new Error("Empty response from Backend");
 
-            return text;
+            return data.text;
 
         } catch (error: any) {
             console.warn("PollinationsGenerator failed:", error.message || error);

@@ -1,51 +1,52 @@
-
-import { GoogleGenAI } from "@google/genai";
 import { TextGenerator } from "./TextGenerator";
 
 export class GeminiGenerator implements TextGenerator {
-    private client: any;
+    private apiKey: string;
     private modelName: string;
     private onUnauthorized?: () => void;
+    private baseUrl: string = "http://localhost:3001/ai/text";
 
     constructor(apiKey: string, modelName: string, onUnauthorized?: () => void) {
-        this.client = new GoogleGenAI({ apiKey });
+        this.apiKey = apiKey;
         this.modelName = modelName;
         this.onUnauthorized = onUnauthorized;
     }
 
     async generate(prompt: string, history: any[]): Promise<string> {
         try {
-            console.log(`GeminiGenerator: Generating with model ${this.modelName}...`);
+            console.log(`GeminiGenerator: Generating with model ${this.modelName} via Backend...`);
 
-            // Construct prompt from history for context
-            let fullPrompt = "";
-            history.forEach(msg => {
-                const text = msg.parts ? msg.parts[0].text : "";
-                fullPrompt += `${msg.role === 'user' ? 'User' : 'Model'}: ${text}\n`;
-            });
-            fullPrompt += `User: ${prompt}\nModel:`;
-
-            const response = await this.client.models.generateContent({
-                model: this.modelName,
-                contents: fullPrompt,
-                config: {
-                    temperature: 0.7,
-                }
+            const response = await fetch(this.baseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-google-api-key': this.apiKey
+                },
+                body: JSON.stringify({
+                    prompt,
+                    history,
+                    provider: 'gemini',
+                    model: this.modelName
+                })
             });
 
-            const text = response.text;
-            if (!text) throw new Error("Empty response from Gemini");
-
-            return text;
-        } catch (error: any) {
-            console.warn(`GeminiGenerator (${this.modelName}) failed:`, error.message || error);
-
-            const errMsg = (error.message || "").toLowerCase();
-            if (errMsg.includes("403") || errMsg.includes("permission denied") || errMsg.includes("unauthenticated")) {
-                console.warn("Gemini Unauthorized. Clearing key.");
+            if (response.status === 403 || response.status === 401) {
+                console.warn("Gemini Unauthorized (Backend). Clearing key.");
                 if (this.onUnauthorized) this.onUnauthorized();
+                throw new Error("Unauthorized");
             }
 
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Backend Error: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            if (!data.text) throw new Error("Empty response from Backend");
+
+            return data.text;
+        } catch (error: any) {
+            console.warn(`GeminiGenerator (${this.modelName}) failed:`, error.message || error);
             throw error;
         }
     }

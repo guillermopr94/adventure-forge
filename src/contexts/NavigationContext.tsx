@@ -14,12 +14,15 @@ interface NavigationContextType {
     setPollinationsToken: (token: string) => void;
     selectedGenreIndex: number;
     setSelectedGenreIndex: (index: number) => void;
+    gameKey: number;
+    resetGame: () => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [screenStack, setScreenStack] = useState<Screen[]>(['apikey']);
+    // Start directly at selection screen
+    const [screenStack, setScreenStack] = useState<Screen[]>(['selection']);
 
     // Initialize from localStorage
     const [userToken, setUserToken] = useState<string>(() => localStorage.getItem("adventure_forge_token") || "");
@@ -29,6 +32,9 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         const saved = localStorage.getItem("adventure_forge_genre_index");
         return saved ? parseInt(saved, 10) : 0;
     });
+
+    // Game Reset Mechanism
+    const [gameKey, setGameKey] = useState(0);
 
     const currentScreen = screenStack[screenStack.length - 1];
 
@@ -62,6 +68,10 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         });
     };
 
+    const resetGame = () => {
+        setGameKey(prev => prev + 1);
+    };
+
     return (
         <NavigationContext.Provider value={{
             currentScreen,
@@ -74,7 +84,9 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
             pollinationsToken,
             setPollinationsToken,
             selectedGenreIndex,
-            setSelectedGenreIndex
+            setSelectedGenreIndex,
+            gameKey, // Expose gameKey
+            resetGame // Expose resetGame
         }}>
             {children}
         </NavigationContext.Provider>

@@ -1,46 +1,50 @@
-
 import { AudioGenerator } from "../AudioGenerator";
-import { GoogleGenAI } from "@google/genai";
 
 export class GeminiTTS implements AudioGenerator {
-    private client: any;
+    private apiKey: string;
     private onUnauthorized?: () => void;
     public readonly shouldSplitText = false;
+    private baseUrl: string = "http://localhost:3001/ai/audio";
 
     constructor(apiKey: string, onUnauthorized?: () => void) {
-        this.client = new GoogleGenAI({ apiKey });
+        this.apiKey = apiKey;
         this.onUnauthorized = onUnauthorized;
     }
 
     async generate(text: string): Promise<string | null> {
         try {
-            console.log("GeminiTTS: Generating audio...");
-            const response = await this.client.models.generateContent({
-                model: "gemini-2.5-flash-preview-tts",
-                contents: [{ parts: [{ text: text }] }],
-                config: {
-                    responseModalities: ['AUDIO'],
-                    speechConfig: {
-                        voiceConfig: {
-                            prebuiltVoiceConfig: { voiceName: 'Kore' },
-                        },
-                    },
+            console.log("GeminiTTS: Generating audio via Backend...");
+
+            const response = await fetch(this.baseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-google-api-key': this.apiKey
                 },
+                body: JSON.stringify({
+                    text,
+                    provider: 'gemini',
+                    voice: 'Kore' // Default voice, can be ignored by backend if strict
+                })
             });
 
-            const data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-            if (!data) throw new Error("Gemini TTS returned no audio data");
-
-            return data;
-        } catch (error: any) {
-            console.warn("GeminiTTS failed:", error.message || error);
-
-            const errMsg = (error.message || "").toLowerCase();
-            if (errMsg.includes("403") || errMsg.includes("permission denied") || errMsg.includes("unauthenticated")) {
-                console.warn("Gemini Unauthorized. Clearing key.");
+            if (response.status === 403 || response.status === 401) {
+                console.warn("Gemini Unauthorized (Backend). Clearing key.");
                 if (this.onUnauthorized) this.onUnauthorized();
+                throw new Error("Unauthorized");
             }
 
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Backend Error: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            if (!data.audio) throw new Error("Backend returned no audio data");
+
+            return data.audio; // Base64 string
+        } catch (error: any) {
+            console.warn("GeminiTTS failed:", error.message || error);
             throw error;
         }
     }
