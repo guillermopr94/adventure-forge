@@ -1,0 +1,57 @@
+.main-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    gap: 30px;
+    color: white;
+    /* Removed title styles as it's handled by StartScreen or needs to be single */
+}
+
+/* Reusing generic button styles or defining clean ones */
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.menu-btn {
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    font-family: 'Cinzel', serif;
+    /* Consistent font */
+    border: 1px solid var(--primary-color, rgba(218, 189, 110, 0.5));
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--primary-color, #dabd6e);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    min-width: 250px;
+    backdrop-filter: blur(5px);
+}
+
+.menu-btn:hover {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: var(--secondary-color, #dabd6e);
+    box-shadow: 0 0 15px var(--primary-color, rgba(218, 189, 110, 0.3));
+    transform: translateY(-2px);
+}
+
+.menu-btn:disabled {
+    border-color: #555;
+    color: #777;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: none;
+    transform: none;
+}
+
+.guest-hint {
+    font-size: 0.9rem;
+    color: #ffffff80;
+    font-style: italic;
+    margin-top: 10px;
+}

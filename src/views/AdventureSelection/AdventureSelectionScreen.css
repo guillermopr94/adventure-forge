@@ -1,0 +1,19 @@
+/* ... existing styles ... */
+
+.back-btn-absolute {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: transparent;
+    border: none;
+    color: var(--text-color, #eee);
+    cursor: pointer;
+    z-index: 100;
+    padding: 10px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.back-btn-absolute:hover {
+    background: rgba(255, 255, 255, 0.1);
+}

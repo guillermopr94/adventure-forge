@@ -12,6 +12,11 @@ interface TextNarratorProps {
 const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isLoadingAudio, onComplete }) => {
     const { sfxVolume } = useSettings();
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const onCompleteRef = useRef(onComplete);
+
+    useEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
 
     // Helper to convert base64 to ArrayBuffer
     const base64ToArrayBuffer = (base64: string) => {
@@ -114,7 +119,7 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
                 const audio = new Audio(audioUrl);
                 audio.volume = sfxVolume;
                 audio.onended = () => {
-                    onComplete && onComplete();
+                    onCompleteRef.current && onCompleteRef.current();
                 };
                 audioRef.current = audio;
 
@@ -122,7 +127,7 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
 
             } catch (e) {
                 console.error("Error processing audio data:", e);
-                onComplete && onComplete();
+                onCompleteRef.current && onCompleteRef.current();
             }
 
         } else if (voice && !isLoadingAudio) {
@@ -193,7 +198,7 @@ const TextNarrator: React.FC<TextNarratorProps> = ({ text, voice, audioData, isL
 
                 speechSynthesis.speak(utterance);
             } else {
-                onComplete && onComplete();
+                onCompleteRef.current && onCompleteRef.current();
             }
         };
 

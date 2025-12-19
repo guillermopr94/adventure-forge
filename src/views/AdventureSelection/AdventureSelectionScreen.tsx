@@ -3,12 +3,12 @@ import { useTranslation } from '../../common/language/LanguageContext';
 import { useTheme } from '../../common/theme/ThemeContext';
 import { useNavigation } from '../../common/contexts/NavigationContext';
 import { ADVENTURE_TYPES } from '../../common/resources/availableTypes';
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiArrowLeft } from "react-icons/fi";
 
 const AdventureSelectionScreen: React.FC = () => {
     const { t } = useTranslation();
     const { setTheme } = useTheme();
-    const { navigate, selectedGenreIndex, setSelectedGenreIndex } = useNavigation();
+    const { navigate, goBack, selectedGenreIndex, setSelectedGenreIndex } = useNavigation();
 
     useEffect(() => {
         // Initialize theme based on current index
@@ -31,6 +31,9 @@ const AdventureSelectionScreen: React.FC = () => {
 
     return (
         <div className="step-container fade-in">
+            <button className="back-btn-absolute" onClick={goBack} title="Back to Main Menu">
+                <FiArrowLeft size={24} />
+            </button>
             <div className="genre-selection-carousel">
                 <h3>{t("select_genre")}</h3>
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { GameSaveData } from '../services/GameService';
 
-export type Screen = 'apikey' | 'selection' | 'game';
+export type Screen = 'main_menu' | 'apikey' | 'selection' | 'game';
 
 interface NavigationContextType {
     currentScreen: Screen;
@@ -16,13 +17,15 @@ interface NavigationContextType {
     setSelectedGenreIndex: (index: number) => void;
     gameKey: number;
     resetGame: () => void;
+    savedGameState: GameSaveData | null;
+    setSavedGameState: (data: GameSaveData | null) => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // Start directly at selection screen
-    const [screenStack, setScreenStack] = useState<Screen[]>(['selection']);
+    // Start at main_menu
+    const [screenStack, setScreenStack] = useState<Screen[]>(['main_menu']);
 
     // Initialize from localStorage
     const [userToken, setUserToken] = useState<string>(() => localStorage.getItem("adventure_forge_token") || "");
@@ -32,6 +35,8 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         const saved = localStorage.getItem("adventure_forge_genre_index");
         return saved ? parseInt(saved, 10) : 0;
     });
+
+    const [savedGameState, setSavedGameState] = useState<GameSaveData | null>(null);
 
     // Game Reset Mechanism
     const [gameKey, setGameKey] = useState(0);
@@ -86,7 +91,9 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
             selectedGenreIndex,
             setSelectedGenreIndex,
             gameKey, // Expose gameKey
-            resetGame // Expose resetGame
+            resetGame, // Expose resetGame
+            savedGameState,
+            setSavedGameState
         }}>
             {children}
         </NavigationContext.Provider>
@@ -100,3 +107,4 @@ export const useNavigation = () => {
     }
     return context;
 };
+

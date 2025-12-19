@@ -36,7 +36,9 @@ const translations = {
         new_game: "New Game",
         google_api_key_label: "Google Gemini API Key",
         openai_api_key_label: "OpenAI API Key",
-        pollinations_token_label: "Pollinations Token"
+        pollinations_token_label: "Pollinations Token",
+        new_adventure: "New Adventure",
+        continue_adventure: "Continue Adventure",
     },
     es: {
         welcome: "Bienvenido a AdventureForge",
@@ -69,7 +71,9 @@ const translations = {
         new_game: "Nuevo Juego",
         google_api_key_label: "Clave API de Google Gemini",
         openai_api_key_label: "Clave API de OpenAI",
-        pollinations_token_label: "Token de Pollinations"
+        pollinations_token_label: "Token de Pollinations",
+        new_adventure: "Nueva Aventura",
+        continue_adventure: "Continuar Aventura",
     },
 };
 

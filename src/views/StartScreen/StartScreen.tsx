@@ -6,6 +6,7 @@ import "./StartScreen.css";
 import { ADVENTURE_TYPES } from "../../common/resources/availableTypes";
 import { NavigationProvider, useNavigation } from "../../common/contexts/NavigationContext";
 import AdventureSelectionScreen from "../AdventureSelection/AdventureSelectionScreen";
+import MainMenu from "../MainMenu/MainMenu";
 
 
 import { SettingsProvider, useSettings } from "../../common/contexts/SettingsContext";
@@ -74,6 +75,7 @@ const StartScreenContent = (): React.ReactElement => {
             {currentScreen !== 'game' ? (
                 <div className="start-screen-container">
                     <div id="welcome-message">{t("welcome")}</div>
+                    {currentScreen === 'main_menu' && <MainMenu />}
                     {currentScreen === 'selection' && <AdventureSelectionScreen />}
                 </div>
             ) : (

@@ -1,0 +1,168 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content.load-game-modal {
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 12px;
+    padding: 30px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    color: white;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.load-game-modal h2 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-family: 'Cinzel', serif;
+    color: #dabd6e;
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: white;
+}
+
+.saves-list {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 5px;
+}
+
+.save-item {
+    display: flex;
+    align-items: center;
+    background: #2a2a2a;
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.save-item:hover {
+    background: #333;
+    border-color: #dabd6e;
+    transform: translateX(5px);
+}
+
+.save-icon img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 15px;
+    border: 2px solid #555;
+}
+
+.save-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.save-genre {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #eee;
+}
+
+.save-date {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 4px;
+}
+
+.save-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    background: transparent;
+    border: 1px solid #555;
+    color: #ccc;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn.play:hover {
+    background: #dabd6e;
+    color: black;
+    border-color: #dabd6e;
+}
+
+.action-btn.delete:hover {
+    background: #ff4444;
+    color: white;
+    border-color: #ff4444;
+}
+
+.no-saves {
+    text-align: center;
+    color: #777;
+    font-style: italic;
+    padding: 40px;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 40px;
+    color: #dabd6e;
+}
+
+/* Scrollbar styling */
+.saves-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.saves-list::-webkit-scrollbar-track {
+    background: #222;
+}
+
+.saves-list::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 3px;
+}
+
+.saves-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

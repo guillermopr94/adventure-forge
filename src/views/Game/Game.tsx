@@ -7,13 +7,17 @@ import "./Game.css";
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import TextNarrator from "../../common/components/TextNarrator/TextNarrator";
-import { FiRotateCw } from 'react-icons/fi';
+import { FiSave } from 'react-icons/fi';
 import BackgroundMusic from "../../common/components/BackgroundMusic/BackgroundMusic";
+import { useAuth } from "../../common/contexts/AuthContext";
+import { GameService } from "../../common/services/GameService";
+import toast, { Toaster } from 'react-hot-toast';
 
 
 import Typewriter from "./components/Typewriter";
-import { getAdventureType } from "../../common/resources/availableTypes";
+import { getAdventureType, AdventureGenre } from "../../common/resources/availableTypes";
 import { AudioGenerator } from "../../common/services/ai/AudioGenerator";
+import { useTheme } from "../../common/theme/ThemeContext";
 
 
 interface GameProps {
@@ -28,16 +32,22 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   const option1 = useRef<HTMLButtonElement>(null);
   const option2 = useRef<HTMLButtonElement>(null);
   const option3 = useRef<HTMLButtonElement>(null);
-  const spinner = useRef<HTMLDivElement>(null);
-  const options = useRef<HTMLDivElement>(null);
   const gameCarousel = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { setUserToken, setOpenaiKey, setPollinationsToken, pollinationsToken, navigate } = useNavigation(); // Get setters and navigate
+  const { setUserToken, setOpenaiKey, setPollinationsToken, pollinationsToken, navigate, savedGameState, setSavedGameState } = useNavigation(); // Get setters and navigate
+  const { user } = useAuth();
+  const { setTheme } = useTheme();
   const [voicesLoaded, setVoicesLoaded] = useState(false);
 
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [gameContent, setGameContent] = useState<string[]>([]);
+  const [gameContent, setGameContent] = useState<string[]>(
+    savedGameState
+      ? (savedGameState.gameContent.length > 0
+        ? [...savedGameState.gameContent.slice(0, -1), ""]
+        : [])
+      : []
+  );
   const [actualContent, setActualContent] = useState<string | null>(null);
 
   // Audio state handled by useSmartAudio now
@@ -65,7 +75,6 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   const selectedVoice = voices.find((voice) => voice.lang.startsWith(language));
 
   // AI Service Initialization
-  const [isGameStarted, setIsGameStarted] = useState(false);
   const [audioGenerator, setAudioGenerator] = useState<AudioGenerator | null>(null);
 
   useEffect(() => {
@@ -134,27 +143,21 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     }
   }, [visualText]);
 
-  const [gameHistory, setGameHistory] = useState<any[]>([
-    {
-      role: "user", // Gemini uses 'user' and 'model' roles, but for history context we can adapt
-      parts: [{ text: t("game_history_content", { gameType: gameType }) }],
-    },
-  ]);
+  const [gameHistory, setGameHistory] = useState<any[]>(
+    savedGameState ? savedGameState.gameHistory : [
+      {
+        role: "user", // Gemini uses 'user' and 'model' roles, but for history context we can adapt
+        parts: [{ text: t("game_history_content", { gameType: gameType }) }],
+      },
+    ]);
 
-  function toggleSpinner(visible: boolean) {
-    if (spinner.current && gameCarousel.current) {
-      spinner.current.classList.toggle("hidden", !visible);
-      gameCarousel.current.classList.toggle("hidden", visible);
-    }
-  }
+  // General processing state (Backend API calls)
+  const [isProcessing, setIsProcessing] = useState(!!savedGameState);
 
-  function toggleOptions(visible: boolean) {
-    if (options.current) {
-      options.current.classList.toggle("hidden", !visible);
-    } else {
-      console.error("No se encontró el elemento 'options'.");
-    }
-  }
+  // Spinner handles both general processing and audio loading
+  const showSpinner = isProcessing || isLoadingAudio;
+
+
 
   function extractOptions(text: string) {
     const lines = text.split('\n');
@@ -185,14 +188,20 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   function handleTextComplete() {
     // Show options when text finishes typing
-    toggleOptions(true);
+    // toggleOptions(true); // Removed to wait for audio/typewriter completion
   }
 
 
 
+  // Image Generation
+  const [currentImage, setCurrentImage] = useState<string | null>(savedGameState?.currentImage || null);
+  const [isGameStarted, setIsGameStarted] = useState(!!savedGameState);
+
   async function startGame() {
+    if (savedGameState) return; // Don't start if restored
+
     setIsGameStarted(true);
-    toggleSpinner(true);
+    setIsProcessing(true);
     toggleOptions(false);
     setActualContent(null);
     // setAudioData(undefined); // Reset handled by playText
@@ -220,32 +229,78 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     // Trigger playback
     start();
 
+    // Set actual content immediately to signal audio context
+    setActualContent(newText);
+
+    // Optional: wait for voices if needed for other logic, but content should be ready
     if (!voicesLoaded) {
-      const checkVoicesInterval = setInterval(() => {
-        if (voicesLoaded) {
-          clearInterval(checkVoicesInterval);
-          setActualContent(newText);
-        }
-      }, 100);
-    } else {
-      setActualContent(newText);
+      // Just a check, no longer blocking actualContent
     }
 
     updateOptionButtons(introOptions);
 
-    updateOptionButtons(introOptions);
-
-    toggleSpinner(false);
+    setIsProcessing(false);
     // toggleOptions(true); // Removed: driven by Typewriter onComplete
   }
 
-  function updateOptionButtons(currentOptions: string[]) {
+  // Add state for options to ensure reliable saving
+  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
+
+  // Restore options and audio on load
+  useEffect(() => {
+    if (savedGameState && savedGameState.gameContent.length > 0) {
+      // 1. Restore Options
+      let restoredOptions: string[] = [];
+      if (savedGameState.currentOptions && savedGameState.currentOptions.length > 0) {
+        restoredOptions = savedGameState.currentOptions;
+      } else {
+        // Fallback legacy extraction
+        const lastContent = savedGameState.gameContent[savedGameState.gameContent.length - 1];
+        const extracted = extractOptions(lastContent);
+        restoredOptions = extracted.options;
+      }
+
+      // Update options state immediately so they are ready when audio finishes
+      if (restoredOptions.length > 0) {
+        updateOptionButtons(restoredOptions);
+      }
+
+      // 2. Trigger Audio for the last content
+      const lastText = savedGameState.gameContent[savedGameState.gameContent.length - 1];
+      if (lastText && voicesLoaded) {
+        // Use AI Audio generation instead of direct text setting
+        prepareText(lastText).then(() => {
+          start();
+          setIsProcessing(false);
+        }).catch(err => {
+          console.error("Error preparing audio on load:", err);
+          // Fallback if audio fails: show options immediately
+          setActualContent(lastText);
+          setGameContent(prev => {
+            const copy = [...prev];
+            copy[copy.length - 1] = lastText;
+            return copy;
+          });
+          setAreOptionsVisible(true);
+          setIsProcessing(false);
+        });
+      } else {
+        setIsProcessing(false);
+      }
+    } else {
+      setIsProcessing(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedGameState, voicesLoaded]);
+
+  function updateOptionButtons(opts: string[]) {
+    setCurrentOptions(opts); // Save to state
     const buttons = [option1, option2, option3];
     for (let i = 0; i < 3; i++) {
       const btn = buttons[i].current;
       if (btn) {
-        if (currentOptions[i]) {
-          btn.textContent = currentOptions[i];
+        if (opts[i]) {
+          btn.textContent = opts[i];
           btn.disabled = false;
         } else {
           btn.textContent = `Opción ${i + 1}`;
@@ -257,7 +312,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   async function sendChoice(choiceIndex: number) {
     toggleOptions(false);
-    toggleSpinner(true);
+    setIsProcessing(true);
     setActualContent(null);
     // setAudioData(undefined); // Reset handled by playText
     setCurrentImage(null);
@@ -283,7 +338,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
     // setGameContent and setActualContent moved after audio generation
     // setGameContent((prev) => [...prev, newText]);
-    // setActualContent(newText);
+    setActualContent(newText);
 
 
     // Push empty string for new content slot
@@ -320,14 +375,13 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     // The "Restart" text is usually appended. 
     // If we want it spoken, pass it to playText.
 
-    // setGameContent((prev) => [...prev, finalContent]); // Removed, handled by effect
     // setActualContent(finalContent);
 
-    toggleSpinner(false);
+    setIsProcessing(false);
   }
 
   // Image Generation
-  const [currentImage, setCurrentImage] = useState<string | null>(null);
+  // const [currentImage, setCurrentImage] = useState<string | null>(savedGameState?.currentImage || null); // Already declared above
 
   async function generateGameImage(text: string) {
     const imagePrompt = `Scene description: ${text}. Style: ${gameType} digital art, immersive, atmospheric, highly detailed.`;
@@ -404,10 +458,39 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   useEffect(() => {
     initializeGame();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voicesLoaded]);
 
+  async function handleSave() {
+    if (!user) return;
+    const saveToast = toast.loading('Saving game...');
+    try {
+      const result = await GameService.saveGame({
+        userId: user.googleId,
+        genreKey: genreKey,
+        gameHistory: gameHistory,
+        gameContent: gameContent,
+        currentOptions: currentOptions,
+        currentImage: currentImage || undefined,
+        _id: savedGameState?._id
+      });
+
+      if (result) {
+        setSavedGameState(result);
+      }
+
+      toast.success("Game Saved!", { id: saveToast });
+    } catch (e) {
+      toast.error("Failed to save game", { id: saveToast });
+    }
+  }
+
   const initializeGame = () => {
-    if (voicesLoaded && !isGameStarted) { // Only start if voices are loaded and not started
+    // If not started and NOT restored (savedGameState handles isGameStarted=true), then start
+    // But isGameStarted is initialized to !!savedGameState.
+    // So if savedGameState is present, isGameStarted is true.
+    // If NOT present, isGameStarted is false.
+    if (voicesLoaded && !isGameStarted) {
       startGame();
     }
   };
@@ -419,20 +502,60 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     goBack();
   }
 
+
+
+  // Options Visibility Logic (Pure React)
+  // We use currentOptions which is already state. If it has items, we show options? 
+  // No, valid options might be loaded but hidden during TTS.
+  // We need an explicit visibility state.
+  const [areOptionsVisible, setAreOptionsVisible] = useState(false);
+
+  // Sync visibility with options availability and loading state
+  // But strictly controlled: only show when we decide (e.g. after TTS or load)
+
+  // Update toggleOptions to use state (renaming internal helper if needed or just using setAreOptionsVisible)
+  function toggleOptions(show: boolean) {
+    setAreOptionsVisible(show);
+  }
+
+  // Effect to restore visibility on load
+  useEffect(() => {
+    if (savedGameState && savedGameState.currentOptions && savedGameState.currentOptions.length > 0) {
+      // If we have options from save, ensure they are visible after a delay
+      // Logic inside the existing load useEffect handles calling updateOptionButtons
+      // We just need to ensure toggleOptions(true) is called there.
+    }
+  }, [savedGameState]);
+
+  // Apply theme globally on mount/change
+  useEffect(() => {
+    if (genreKey) {
+      setTheme(genreKey as AdventureGenre);
+    }
+  }, [genreKey, setTheme]);
+
   return (
-    <>
+    <div
+      className={`game-container`}
+    // Styles now handled by ThemeContext globally
+    >
+      <Toaster position="top-right" />
       <BackgroundMusic audioFile={audioFile} />
 
-      {(voicesLoaded && actualContent != null) && (
+      {((voicesLoaded || !!audioData) && actualContent != null) && (
         <TextNarrator
           text={actualContent}
           voice={selectedVoice}
           audioData={audioData}
           isLoadingAudio={isLoadingAudio}
-          onComplete={onAudioComplete}
+          onComplete={() => {
+            onAudioComplete();
+            // Ensure options show up after audio if they exist
+            if (currentOptions.length > 0) setAreOptionsVisible(true);
+          }}
         />
       )}
-      <div ref={gameCarousel}>
+      <div ref={gameCarousel} style={{ display: showSpinner ? 'none' : 'block' }}>
         {currentImage && (
           <div className="game-image-container fade-in">
             <img src={currentImage} alt="Scene visualization" className="game-scene-image" />
@@ -453,21 +576,71 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
                   text={item}
                   isActive={index === gameContent.length - 1}
                   duration={index === gameContent.length - 1 ? visualDuration : 0}
-                // onComplete removed to prevent premature button loading
+                  onComplete={() => {
+                    // Check if TextNarrator is active
+                    const textNarratorActive = (voicesLoaded || !!audioData) && actualContent != null;
+                    // If no audio is loading, no active narrator logic, and not processing, show options
+                    if (!isLoadingAudio && !isProcessing && !textNarratorActive) {
+                      setAreOptionsVisible(true);
+                    }
+                  }}
                 />
               </p>
             </div>
           ))}
         </Carousel>
       </div>
-      <div ref={spinner} className="spinner">{t('loadingText')}</div>
-      <div ref={options} id="options" className="hidden">
+      <div className="spinner" style={{ display: showSpinner ? 'block' : 'none' }}>{t('loadingText')}</div>
+
+      {/* Options Container */}
+      <div id="options" className={areOptionsVisible && !showSpinner ? "fade-in-up" : ""} style={{ display: (areOptionsVisible && !showSpinner) ? 'flex' : 'none' }}>
         <p className="choose-instruction fade-in-delayed">{t("choose_option")}</p>
-        <button ref={option1} onClick={() => sendChoice(1)}>Opción 1</button>
-        <button ref={option2} onClick={() => sendChoice(2)}>Opción 2</button>
-        <button ref={option3} onClick={() => sendChoice(3)}>Opción 3</button>
+        <button ref={option1} onClick={() => sendChoice(1)} disabled={!currentOptions[0]}>{currentOptions[0] || "Option 1"}</button>
+        <button ref={option2} onClick={() => sendChoice(2)} disabled={!currentOptions[1]}>{currentOptions[1] || "Option 2"}</button>
+        <button ref={option3} onClick={() => sendChoice(3)} disabled={!currentOptions[2]}>{currentOptions[2] || "Option 3"}</button>
       </div>
-    </>
+
+      {user && (
+        <button
+          onClick={handleSave}
+          title="Save Game"
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            background: 'var(--panel-bg)', // Use theme var
+            color: 'var(--primary-color)',
+            border: '2px solid var(--primary-color)',
+            borderRadius: '50%',
+            width: '50px',
+            height: '50px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 1000
+          }}
+        >
+          <FiSave size={24} />
+        </button>
+      )}
+
+      <button
+        onClick={handleExit}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          left: '20px',
+          background: 'transparent',
+          border: 'none',
+          color: 'var(--text-color)',
+          fontSize: '1.5rem',
+          cursor: 'pointer',
+          zIndex: 100
+        }}>
+        ✕
+      </button>
+    </div>
   );
 
 }

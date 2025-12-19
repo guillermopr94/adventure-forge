@@ -66,6 +66,7 @@ export const useSmartAudio = (
     };
 
     const prepareText = async (text: string) => {
+        setAudioData(undefined); // Clear previous audio immediately
         setIsLoading(true);
         // Clear previous pending states
         hasNextChunkRef.current = false;
