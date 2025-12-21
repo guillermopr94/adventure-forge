@@ -4,6 +4,7 @@ import { useTheme } from '../../common/theme/ThemeContext';
 import { useNavigation } from '../../common/contexts/NavigationContext';
 import { ADVENTURE_TYPES } from '../../common/resources/availableTypes';
 import { FiChevronLeft, FiChevronRight, FiArrowLeft } from "react-icons/fi";
+import "./AdventureSelectionScreen.css";
 
 const AdventureSelectionScreen: React.FC = () => {
     const { t } = useTranslation();
