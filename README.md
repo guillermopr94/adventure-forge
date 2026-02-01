@@ -1,46 +1,26 @@
-# Getting Started with Create React App
+# Adventure Forge
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An AI-powered interactive storytelling platform where players can "choose their own adventure" with dynamically generated narratives and images.
 
-## Available Scripts
+## 🚀 Overview
 
-In the project directory, you can run:
+Adventure Forge leverages advanced Large Language Models (LLMs) and image synthesis to create unique, high-fidelity role-playing experiences. The platform is designed with a focus on modularity, allowing for the rapid addition of new genres, themes, and game rules.
 
-### `npm start`
+## 🛠️ Technical Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- **Dynamic Narrative Engine:** Powered by Google GenAI (Gemini) to craft responsive and immersive stories.
+- **AI Image Generation:** Integrated synthesis of visual content to match the evolving story context.
+- **Provider Fallback System:** A custom-built resilience layer that automatically switches between AI providers to ensure service availability and cost-optimization.
+- **Persistence Layer:** Secure game state management using MongoDB, allowing players to resume adventures seamlessly.
+- **Authentication:** Integrated Google OAuth for secure and streamlined user access.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## 🏗️ Architecture
 
-### `npm test`
+- **Frontend:** React + TypeScript with a focus on a dynamic, responsive user interface.
+- **Backend:** NestJS (Node.js) architected for scalability and maintainable service integration.
+- **Database:** MongoDB for flexible schema-less data storage.
+- **Deployment:** Frontend hosted on GitHub Pages with automated CI/CD flows.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🌍 Live Demo
 
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+[Explore the Forge](https://guillermopr94.github.io/adventure-forge/)

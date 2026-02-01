@@ -8,6 +8,7 @@ export interface GameSaveData {
     gameContent: string[];
     currentOptions?: string[];
     currentImage?: string;
+    currentImages?: string[];
     updatedAt?: Date;
     _id?: string;
     createdAt?: Date;
