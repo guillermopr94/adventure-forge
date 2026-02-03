@@ -1,11 +1,11 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { config } from "../../common/config/config";
 import { useSmartAudio } from "../../common/hooks/useSmartAudio";
+import { useGameStream } from "../../common/hooks/useGameStream";
+import { splitIntoSentences } from "../../common/utils/textSplitter";
 import { useLanguage, useTranslation } from "../../common/language/LanguageContext";
 import { useNavigation } from "../../common/contexts/NavigationContext";
 import "./Game.css";
-import { Carousel } from 'react-responsive-carousel';
-import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import TextNarrator from "../../common/components/TextNarrator/TextNarrator";
 import { FiSave } from 'react-icons/fi';
 import BackgroundMusic from "../../common/components/BackgroundMusic/BackgroundMusic";
@@ -13,12 +13,9 @@ import { useAuth } from "../../common/contexts/AuthContext";
 import { GameService } from "../../common/services/GameService";
 import toast, { Toaster } from 'react-hot-toast';
 
-
-import Typewriter from "./components/Typewriter";
 import { getAdventureType, AdventureGenre } from "../../common/resources/availableTypes";
 import { AudioGenerator } from "../../common/services/ai/AudioGenerator";
 import { useTheme } from "../../common/theme/ThemeContext";
-
 
 interface GameProps {
   userToken: string;
@@ -32,42 +29,48 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   const option1 = useRef<HTMLButtonElement>(null);
   const option2 = useRef<HTMLButtonElement>(null);
   const option3 = useRef<HTMLButtonElement>(null);
-  const gameCarousel = useRef<HTMLDivElement>(null);
+
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { setUserToken, setOpenaiKey, setPollinationsToken, pollinationsToken, navigate, savedGameState, setSavedGameState } = useNavigation(); // Get setters and navigate
+  const { setPollinationsToken, pollinationsToken, navigate, savedGameState, setSavedGameState, goBack } = useNavigation();
   const { user } = useAuth();
   const { setTheme } = useTheme();
-  const [voicesLoaded, setVoicesLoaded] = useState(false);
 
+  const [voicesLoaded, setVoicesLoaded] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   // Cinematic State
   const [cinematicSegments, setCinematicSegments] = useState<{ text: string; image?: string }[]>([]);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
 
-  // Retro-compatibility (or fallback): gameContent handles the text history.
-  // In cinematic mode, gameContent aggregates the text as it plays? 
-  // Or do we just use gameContent for the transcript log?
-  const [gameContent, setGameContent] = useState<string[]>(
-    savedGameState
-      ? (savedGameState.gameContent.length > 0
-        ? [...savedGameState.gameContent.slice(0, -1), ""]
-        : [])
-      : []
-  );
+  // Text & Interaction State
+  const [gameContent, setGameContent] = useState<string[]>([]);
   const [actualContent, setActualContent] = useState<string | null>(null);
+  const [gameHistory, setGameHistory] = useState<any[]>(savedGameState ? savedGameState.gameHistory : []);
+  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
+  const [areOptionsVisible, setAreOptionsVisible] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(!!savedGameState);
+  const [isGameStarted, setIsGameStarted] = useState(!!savedGameState);
 
-  // Audio state handled by useSmartAudio now
+  // Cinematic Overlay State
+  const [currentSentence, setCurrentSentence] = useState<string>("");
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
+  const [sentences, setSentences] = useState<string[]>([]);
 
-
+  // Theme & Audio Config
   const audioFile = getAdventureType(genreKey).music;
 
+  // --- Voice Handling ---
   const updateVoices = () => {
     const availableVoices = window.speechSynthesis.getVoices();
     setVoices(availableVoices);
     if (availableVoices.length > 0) {
       setVoicesLoaded(true);
+    } else {
+      // Fallback for some browsers if voices are delayed but we want to start
+      // setVoicesLoaded(true); 
     }
   };
 
@@ -75,23 +78,25 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     window.speechSynthesis.addEventListener("voiceschanged", updateVoices);
     updateVoices();
 
+    // Safety timeout: If no voices after 2s, just start
+    const timer = setTimeout(() => setVoicesLoaded(true), 2000);
+
     return () => {
       window.speechSynthesis.removeEventListener("voiceschanged", updateVoices);
+      clearTimeout(timer);
     };
   }, []);
 
   const selectedVoice = voices.find((voice) => voice.lang.startsWith(language));
 
-  // AI Service Initialization
+  // --- AI Audio Generation Service ---
   const [audioGenerator, setAudioGenerator] = useState<AudioGenerator | null>(null);
 
   useEffect(() => {
-    // Define a simple backend audio generator
     const backendAudioGenerator: AudioGenerator = {
-      shouldSplitText: false, // Let backend handle full text or simple chunks
+      shouldSplitText: false,
       generate: async (text: string) => {
         try {
-          console.log("Requesting Audio from Backend...");
           const response = await fetch(`${config.apiUrl}/ai/audio`, {
             method: 'POST',
             headers: {
@@ -100,12 +105,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
               'x-pollinations-token': pollinationsToken,
               'x-openai-api-key': openaiKey || ''
             },
-            body: JSON.stringify({
-              text,
-              voice: selectedVoice?.name || 'alloy',
-              genre: genreKey,
-              lang: language
-            })
+            body: JSON.stringify({ text, voice: selectedVoice?.name || 'alloy', genre: genreKey, lang: language })
           });
           if (!response.ok) throw new Error("Backend Audio Failed");
           const data = await response.json();
@@ -114,586 +114,333 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
           console.warn("Backend Audio Error:", e);
           return null;
         }
+      },
+      generateBatch: async (texts: string[]) => {
+        // Batch fallback if needed, but Streaming handles this now
+        return { audios: [] };
       }
     };
     setAudioGenerator(backendAudioGenerator);
-
   }, [userToken, openaiKey, pollinationsToken, language, genreKey, selectedVoice]);
 
-  // Hook for Smart Audio (Split & Stream)
+  // --- Hooks ---
+  const handleDurationSet = useCallback((ms: number) => { }, []);
+
+  // Forward Declaration for useSmartAudio
+  const advanceSentence = async () => {
+    setOverlayVisible(false);
+    await new Promise(r => setTimeout(r, 600)); // Fade delay
+
+    const nextIdx = currentSentenceIndex + 1;
+    if (nextIdx < sentences.length) {
+      setCurrentSentenceIndex(nextIdx);
+      // Check if this sentence needs to wait (sync)? handled by prepareText cache check
+      playSentence(sentences[nextIdx], nextIdx);
+    } else {
+      advanceCinematicSegment();
+    }
+  };
+
+  const handleSequenceEnd = useCallback(() => {
+    advanceSentence();
+  }, [currentSentenceIndex, sentences]); // Dependencies handled by state updates usually
+
   const {
     audioData,
     isLoading: isLoadingAudio,
     visualText,
-    visualDuration,
     prepareText,
+    prefetch,
     start,
-    onAudioComplete
+    onAudioComplete,
+    cacheAudio
   } = useSmartAudio(
     userToken,
     language,
     genreKey,
-    () => { }, // setDuration callback no longer needed for sync
-    handleTextComplete,
-    audioGenerator, // Inject the service
+    handleDurationSet,
+    handleSequenceEnd, // We need to be careful with closure here. ideally use ref or simplified logic.
+    audioGenerator,
   );
 
-  // Sync visual text from hook to game content
-  useEffect(() => {
-    if (visualText) {
-      setActualContent(visualText);
-      setActualContent(visualText);
-      // Cinematic: We don't push to gameContent log for every token.
-      // But for current logic compatibility, we might need to.
-      // Ideally, the "Typewriter" just displays visualText.
-      setGameContent(prev => {
-        if (prev.length === 0) return [visualText];
-        const copy = [...prev];
-        copy[copy.length - 1] = visualText;
-        return copy;
-      });
-    }
-  }, [visualText]);
+  // Re-bind handleSequenceEnd to the actual function logic if hook captures it
+  // Since handleSequenceEnd uses 'advanceSentence' which uses state, it's complex.
+  // Ideally 'onComplete' in TextNarrator calls 'advanceSentence' directly.
+  // And useSmartAudio just triggers 'onSequenceEnd' when audio finishes playing internally.
 
-  const [gameHistory, setGameHistory] = useState<any[]>(
-    savedGameState ? savedGameState.gameHistory : [
-      {
-        role: "user", // Gemini uses 'user' and 'model' roles, but for history context we can adapt
-        parts: [{ text: t("game_history_content", { gameType: gameType }) }],
-      },
-    ]);
+  const { startStream, isStreaming: isStreamProcessing } = useGameStream(userToken, pollinationsToken, openaiKey);
 
-  // General processing state (Backend API calls for Text/Image)
-  const [isProcessing, setIsProcessing] = useState(!!savedGameState);
-
-  // Spinner handles ONLY major processing (initial load / text generation).
-  // Audio loading should happen in background or be non-intrusive.
-  const showSpinner = isProcessing;
-
-
-
-  function extractOptions(text: string) {
-    const lines = text.split('\n');
-    let extractedOptions: string[] = [];
-    let newText = "";
-
-    // Specific delimiter check first
-    if (text.includes("[OPTIONS]")) {
-      const parts = text.split("[OPTIONS]");
-      newText = parts[0].trim();
-      const optionsPart = parts[1].trim();
-      extractedOptions = optionsPart.split('\n').filter(l => l.trim().length > 0).map(l => l.replace(/^\d+[\.\)]\s*/, '').trim());
-    } else {
-      // Fallback to heuristic
-      for (const line of lines) {
-        const lowerCaseLine = line.toLowerCase();
-        if (/^(\d+[\.\)]|opci[oó]n\s*\d+\:?)/i.test(lowerCaseLine)) {
-          const separatorIndex = line.search(/[\.\)\:]/);
-          if (separatorIndex !== -1) {
-            const optionText = line.slice(separatorIndex + 1).trim();
-            if (optionText) extractedOptions.push(optionText);
-          }
-        } else {
-          newText += line + "\n";
-        }
-      }
-    }
-    return { options: extractedOptions, newText: newText.trim() };
+  // --- Helper Functions ---
+  function toggleOptions(show: boolean) {
+    setAreOptionsVisible(show);
   }
-
-  // Helper to split into 3 paragraphs
-  function splitIntoParagraphs(text: string): string[] {
-    return text.split("[PARAGRAPH]").map(p => p.trim()).filter(p => p.length > 0);
-  }
-
-  function handleTextComplete() {
-    // Show options when text finishes typing
-    // toggleOptions(true); // Removed to wait for audio/typewriter completion
-  }
-
-
-
-  // Image Generation
-  const [currentImage, setCurrentImage] = useState<string | null>(savedGameState?.currentImage || null);
-  const [isGameStarted, setIsGameStarted] = useState(!!savedGameState);
-
-  async function startGame() {
-    if (savedGameState) return; // Don't start if restored
-
-    setIsGameStarted(true);
-    setIsProcessing(true);
-    toggleOptions(false);
-    toggleOptions(false);
-    setActualContent(null);
-    setCurrentImage(null);
-
-    // Strict Cinematic Prompt
-    const introPrompt = `${t("intro_prompt", { gameType: gameType })} 
-    IMPORTANT: You must output exactly 3 distinct paragraphs describing the scene progressively. 
-    Separate each paragraph with the tag [PARAGRAPH]. 
-    After the 3 paragraphs, output the tag [OPTIONS] followed by 3 choices.`;
-    // Update history with initial prompt
-    setGameHistory(prev => [...prev, { role: "user", parts: [{ text: introPrompt }] }]);
-    const introText = await fetchGeminiResponse(introPrompt);
-    // Update history with model response
-    setGameHistory(prev => [...prev, { role: "model", parts: [{ text: introText }] }]);
-
-    const { options: introOptions, newText } = extractOptions(introText);
-
-    // Process Cinematic Segments
-    const paragraphs = splitIntoParagraphs(newText);
-    // Fallback if split fails
-    const validParagraphs = paragraphs.length > 0 ? paragraphs : [newText];
-
-    const initialSegments = validParagraphs.map(p => ({ text: p, image: undefined }));
-    setCinematicSegments(initialSegments);
-    setCurrentSegmentIndex(0);
-
-    // 1. Generate FIRST image and audio blocking
-    // This ensures the game starts with at least one complete segment
-    const firstSegmentText = validParagraphs[0];
-
-    // Prepare Image for first segment
-    const imagePromise = generateGameImage(firstSegmentText);
-
-    await Promise.all([imagePromise]);
-
-    const firstImage = await imagePromise;
-
-    // Update state with first image
-    setCinematicSegments(prev => {
-      const copy = [...prev];
-      if (copy[0]) copy[0].image = firstImage;
-      return copy;
-    });
-
-    setCurrentImage(firstImage || null);
-    updateOptionButtons(introOptions);
-
-    // Initial Trigger is handled by the useEffect watching [cinematicSegments, currentSegmentIndex]
-    // which splits sentences and starts playSentence.
-    // So we don't need to manually call prepareText here anymore for the INITIAL segment logic.
-    // However, useEffect might not trigger if index is 0 and it was 0?
-    // We set index to 0, which is initial. But cinematicSegments array changed.
-    // So useEffect SHOULD trigger.
-
-    // BUT we need to ensure audio is pre-fetched? 
-    // playSentence call in useEffect will call prepareText.
-
-    setIsProcessing(false);
-
-    // 2. Generate remaining images in background
-    if (validParagraphs.length > 1) {
-      // We do not await this, so the game continues
-      (async () => {
-        for (let i = 1; i < validParagraphs.length; i++) {
-          const img = await generateGameImage(validParagraphs[i]);
-          setCinematicSegments(prev => {
-            const copy = [...prev];
-            if (copy[i]) copy[i].image = img;
-            return copy;
-          });
-        }
-      })();
-    }
-  }
-
-  // Add state for options to ensure reliable saving
-  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
-
-  // Restore options and audio on load
-  useEffect(() => {
-    if (savedGameState && savedGameState.gameContent.length > 0) {
-      // 1. Restore Options
-      let restoredOptions: string[] = [];
-      if (savedGameState.currentOptions && savedGameState.currentOptions.length > 0) {
-        restoredOptions = savedGameState.currentOptions;
-      } else {
-        // Fallback legacy extraction
-        const lastContent = savedGameState.gameContent[savedGameState.gameContent.length - 1];
-        const extracted = extractOptions(lastContent);
-        restoredOptions = extracted.options;
-      }
-
-      // Update options state immediately so they are ready when audio finishes
-      if (restoredOptions.length > 0) {
-        updateOptionButtons(restoredOptions);
-      }
-
-      // 2. Trigger Audio for the last content
-      const lastText = savedGameState.gameContent[savedGameState.gameContent.length - 1];
-      if (lastText && voicesLoaded) {
-        // Use AI Audio generation instead of direct text setting
-        prepareText(lastText).then(() => {
-          start();
-          setIsProcessing(false);
-        }).catch(err => {
-          console.error("Error preparing audio on load:", err);
-          // Fallback if audio fails: show options immediately
-          setActualContent(lastText);
-          setGameContent(prev => {
-            const copy = [...prev];
-            copy[copy.length - 1] = lastText;
-            return copy;
-          });
-          setAreOptionsVisible(true);
-          setIsProcessing(false);
-        });
-      } else {
-        setIsProcessing(false);
-      }
-    } else {
-      setIsProcessing(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedGameState, voicesLoaded]);
 
   function updateOptionButtons(opts: string[]) {
-    setCurrentOptions(opts); // Save to state
+    setCurrentOptions(opts);
     const buttons = [option1, option2, option3];
     for (let i = 0; i < 3; i++) {
-      const btn = buttons[i].current;
-      if (btn) {
+      // Safe access
+      if (buttons[i].current) {
         if (opts[i]) {
-          btn.textContent = opts[i];
-          btn.disabled = false;
+          buttons[i].current!.textContent = opts[i];
+          buttons[i].current!.disabled = false;
         } else {
-          btn.textContent = `Opción ${i + 1}`;
-          btn.disabled = true; // Disable if no option found
+          buttons[i].current!.textContent = `Option ${i + 1}`;
+          buttons[i].current!.disabled = true;
         }
       }
     }
   }
+
+  // --- Core Game Logic ---
 
   async function sendChoice(choiceIndex: number) {
     toggleOptions(false);
     setIsProcessing(true);
     setActualContent(null);
-    // setAudioData(undefined); // Reset handled by playText
     setCurrentImage(null);
 
-
-    // Get the text of the chosen option
+    // Get choice text
     const buttons = [option1, option2, option3];
     const choiceText = buttons[choiceIndex - 1].current?.textContent || `Option ${choiceIndex}`;
+    const prompt = `I choose option ${choiceIndex}: ${choiceText}. What happens next?`;
 
-    const prompt = `I choose option ${choiceIndex}: ${choiceText}. What happens next?
-    IMPORTANT: You must output exactly 3 distinct paragraphs describing the scene progressively. 
-    Separate each paragraph with the tag [PARAGRAPH]. 
-    After the 3 paragraphs, output the tag [OPTIONS] followed by 3 choices.`;
+    // Optimistic UI
+    const currentHistory = [...gameHistory, { role: "user", parts: [{ text: prompt }] }];
+    setGameHistory(currentHistory);
 
-    // Update history with user choice
-    setGameHistory(prev => [...prev, { role: "user", parts: [{ text: prompt }] }]);
+    // Start Streaming
+    await startStream(
+      prompt,
+      currentHistory,
+      selectedVoice?.name || 'alloy',
+      genreKey,
+      language,
+      (event) => {
+        if (event.type === 'text_structure') {
+          if (event.paragraphs) {
+            const newSegments = event.paragraphs.map(p => ({ text: p, image: undefined }));
+            setCinematicSegments(newSegments);
+            setCurrentSegmentIndex(0);
+            if (event.options) updateOptionButtons(event.options);
 
-    const response = await fetchGeminiResponse(prompt);
-
-    // Update history with model response
-    setGameHistory(prev => [...prev, { role: "model", parts: [{ text: response }] }]);
-
-    const { options: responseOptions, newText } = extractOptions(response);
-    // Correctly use the previously extracted variables
-    updateOptionButtons(responseOptions);
-
-    const paragraphs = splitIntoParagraphs(newText);
-
-    // If AI fails to adhere to format (e.g. 1 paragraph), fallback to single segment
-    const validParagraphs = paragraphs.length > 0 ? paragraphs : [newText];
-
-    const initialSegments = validParagraphs.map(p => ({ text: p, image: undefined }));
-    setCinematicSegments(initialSegments);
-    setCurrentSegmentIndex(0);
-
-    // 1. Generate FIRST image and audio blocking
-    const firstSegmentText = validParagraphs[0];
-
-    const audioPromise = prepareText(firstSegmentText);
-    const imagePromise = generateGameImage(firstSegmentText);
-
-    await Promise.all([audioPromise, imagePromise]);
-
-    const firstImage = await imagePromise;
-
-    setCinematicSegments(prev => {
-      const copy = [...prev];
-      if (copy[0]) copy[0].image = firstImage;
-      return copy;
-    });
-
-    setCurrentImage(firstImage || null);
-    setGameContent(prev => [...prev, ""]);
-
-    start();
-    setActualContent(firstSegmentText);
-
-    let finalContent = newText; // For logic reference
-
-    if (response.toLowerCase().includes(t("game_end")) || response.toLowerCase().includes("fin de la aventura")) {
-      // Handle end game logic
-    }
-
-    setIsProcessing(false);
-
-    // 2. Generate remaining images in background
-    if (validParagraphs.length > 1) {
-      (async () => {
-        for (let i = 1; i < validParagraphs.length; i++) {
-          const img = await generateGameImage(validParagraphs[i]);
-          setCinematicSegments(prev => {
-            const copy = [...prev];
-            if (copy[i]) copy[i].image = img;
-            return copy;
-          });
+            // Update history
+            const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
+            setGameHistory(prev => [...prev.filter(h => h.role !== 'model'), { role: 'model', parts: [{ text: fullText }] }]);
+          }
         }
-      })();
-    }
-  }
-
-  // --- Cinematic Transition Logic ---
-  // --- Cinematic Transition Logic (Moved below) ---
-
-  // Image Generation
-  // const [currentImage, setCurrentImage] = useState<string | null>(savedGameState?.currentImage || null); // Already declared above
-
-  async function generateGameImage(text: string): Promise<string | undefined> {
-    const imagePrompt = `Scene description: ${text.substring(0, 300)}. Style: ${gameType} digital art, cinematic, immersive, atmospheric, highly detailed.`;
-
-    try {
-      //   console.log("Requesting Image from Backend...");
-      const response = await fetch(`${config.apiUrl}/ai/image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-google-api-key': userToken
-        },
-        body: JSON.stringify({ prompt: imagePrompt })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.image) return data.image; // Return, don't set state directly
-      } else {
-        console.warn("Backend Image Failed");
+        else if (event.type === 'image') {
+          if (typeof event.index === 'number' && event.data) {
+            setCinematicSegments(prev => {
+              const copy = [...prev];
+              if (copy[event.index!]) copy[event.index!].image = event.data;
+              return copy;
+            });
+            // Preload
+            const img = new Image();
+            img.src = event.data;
+            if (event.index === 0) setCurrentImage(event.data);
+          }
+        }
+        else if (event.type === 'audio') {
+          if (event.text && event.data) {
+            cacheAudio(event.text, event.data);
+          }
+        }
+        else if (event.type === 'error') {
+          toast.error(`Stream Error: ${event.error}`);
+          setIsProcessing(false);
+        }
+        else if (event.type === 'done') {
+          // Stream finished.
+        }
       }
-    } catch (e) {
-      console.warn("Backend Image Error:", e);
-    }
-    return undefined;
+    );
   }
 
-  // Removed old generateImagen / generatePollinations functions
+  // --- Playback Logic ---
 
+  const playSentence = async (text: string, index: number) => {
+    if (!text) return;
 
-  async function fetchGeminiResponse(prompt: string): Promise<string> {
-    try {
-      const response = await fetch(`${config.apiUrl}/ai/text`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-google-api-key': userToken,
-          'x-pollinations-token': pollinationsToken
-        },
-        body: JSON.stringify({
-          prompt,
-          history: gameHistory
-          // Model selection is handled by the backend now
-        })
-      });
+    // Prefetch next
+    const nextText = sentences[index + 1];
+    if (nextText) prefetch(nextText);
 
-      if (!response.ok) throw new Error("Backend Text Failed");
-      const data = await response.json();
-      return data.text;
-    } catch (e) {
-      console.error("Backend Text Error:", e);
-      return "Error: Could not connect to any AI service. Please check your internet connection.";
+    // Show text & Play Audio
+    setTimeout(async () => {
+      setCurrentSentence(text);
+      setOverlayVisible(true);
+      // This will wait for cached audio (from stream) or fetch it
+      await prepareText(text);
+      start();
+    }, 200);
+  };
+
+  const advanceCinematicSegment = async () => {
+    const nextIndex = currentSegmentIndex + 1;
+    if (nextIndex < cinematicSegments.length) {
+      // Wait for next image to be ready (Visual Sync)
+      let nextSegment = cinematicSegments[nextIndex];
+      let retries = 0;
+      while (!nextSegment.image && retries < 40) { // 20s timeout
+        await new Promise(r => setTimeout(r, 500));
+        // We must read state... but state in while loop is stale.
+        // Actually, we can just return and let useEffect re-trigger?
+        // No, advanceCinematicSegment is called by Audio End.
+        // We should block here or set index and let useEffect block.
+        // We'll set index. The useEffect handles the wait.
+        break;
+      }
+      setCurrentSegmentIndex(nextIndex);
+    } else {
+      setAreOptionsVisible(true);
+      setIsProcessing(false);
     }
-  }
+  };
+
+  // Tracking Effect for Segment Changes
+  const lastProcessedTextRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const currentSegment = cinematicSegments[currentSegmentIndex];
+    if (currentSegment) {
+      // --- VISUAL SYNC CHECK ---
+      if (!currentSegment.image) return; // Wait until image arrives via stream update
+
+      const text = currentSegment.text;
+      // Only init if text changed OR we were waiting for image for this text
+      if (lastProcessedTextRef.current !== text || (!currentImage && currentSegment.image)) {
+        lastProcessedTextRef.current = text;
+        setCurrentImage(currentSegment.image);
+
+        const newSentences = splitIntoSentences(text);
+        setSentences(newSentences);
+        setCurrentSentenceIndex(0);
+
+        if (newSentences.length > 0) {
+          playSentence(newSentences[0], 0);
+        }
+      }
+    } else {
+      lastProcessedTextRef.current = null;
+    }
+  }, [currentSegmentIndex, cinematicSegments]);
+
+
+  // --- Initialization & Save ---
+
+  useEffect(() => {
+    if (savedGameState && savedGameState.currentOptions) toggleOptions(true);
+  }, [savedGameState]);
+
+  useEffect(() => {
+    if (genreKey) setTheme(genreKey as AdventureGenre);
+  }, [genreKey, setTheme]);
 
   function resetGame() {
     window.speechSynthesis.cancel();
     toggleOptions(false);
     setGameContent([]);
-    setIsGameStarted(false); // Reset game started state
-    setGameHistory([
-      {
-        role: "user",
-        parts: [{ text: t("game_history_content", { gameType: gameType }) }],
-      },
-    ]);
+    setIsGameStarted(false);
+    setGameHistory([]);
     startGame();
   }
 
-  useEffect(() => {
-    initializeGame();
-  }, []);
+  async function startGame() {
+    setIsGameStarted(true);
+    setGameHistory([]);
 
-  useEffect(() => {
-    initializeGame();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voicesLoaded]);
+    const introPrompt = `${t("intro_prompt", { gameType: gameType })} 
+     IMPORTANT: You must output exactly 3 distinct paragraphs describing the scene progressively. 
+     Separate each paragraph with the tag [PARAGRAPH]. 
+     After the 3 paragraphs, output the tag [OPTIONS] followed by 3 choices.`;
 
-  async function handleSave() {
-    if (!user) return;
-    const saveToast = toast.loading('Saving game...');
-    try {
-      const result = await GameService.saveGame({
-        userId: user.googleId,
-        genreKey: genreKey,
-        gameHistory: gameHistory,
-        gameContent: gameContent,
-        currentOptions: currentOptions,
-        currentImage: currentImage || undefined,
-        currentImages: cinematicSegments.map(s => s.image || ""), // Save all current images
-        _id: savedGameState?._id
-      });
+    const currentHistory = [{ role: "user", parts: [{ text: introPrompt }] }];
+    setGameHistory(currentHistory);
 
-      if (result) {
-        setSavedGameState(result);
+    await startStream(
+      introPrompt,
+      currentHistory,
+      selectedVoice?.name || 'alloy',
+      genreKey,
+      language,
+      (event) => {
+        if (event.type === 'text_structure') {
+          if (event.paragraphs) {
+            const newSegments = event.paragraphs.map(p => ({ text: p, image: undefined }));
+            setCinematicSegments(newSegments);
+            setCurrentSegmentIndex(0);
+            if (event.options) updateOptionButtons(event.options);
+            const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
+            setGameHistory(prev => [...prev.filter(h => h.role !== 'model'), { role: 'model', parts: [{ text: fullText }] }]);
+          }
+        }
+        else if (event.type === 'image') {
+          if (typeof event.index === 'number' && event.data) {
+            setCinematicSegments(prev => {
+              const copy = [...prev];
+              if (copy[event.index!]) copy[event.index!].image = event.data;
+              return copy;
+            });
+            const img = new Image();
+            img.src = event.data;
+            if (event.index === 0) setCurrentImage(event.data);
+          }
+        }
+        else if (event.type === 'audio') {
+          if (event.text && event.data) cacheAudio(event.text, event.data);
+        }
+        else if (event.type === 'error') {
+          toast.error(`Stream Error: ${event.error}`);
+          setIsProcessing(false);
+        }
       }
-
-      toast.success("Game Saved!", { id: saveToast });
-    } catch (e) {
-      toast.error("Failed to save game", { id: saveToast });
-    }
+    );
   }
 
   const initializeGame = () => {
-    // If not started and NOT restored (savedGameState handles isGameStarted=true), then start
-    // But isGameStarted is initialized to !!savedGameState.
-    // So if savedGameState is present, isGameStarted is true.
-    // If NOT present, isGameStarted is false.
-    if (voicesLoaded && !isGameStarted) {
-      startGame();
+    if (!isGameStarted) {
+      console.log("Initializing Game. Voices Loaded:", voicesLoaded);
+      if (voicesLoaded) {
+        startGame();
+      } else {
+        // toast("Waiting for voices...");
+      }
     }
   };
 
-  const { goBack } = useNavigation();
+  useEffect(() => { initializeGame(); }, [voicesLoaded]);
 
   function handleExit() {
     window.speechSynthesis.cancel();
     goBack();
   }
 
-
-
-  // Options Visibility Logic (Pure React)
-  // We use currentOptions which is already state. If it has items, we show options? 
-  // No, valid options might be loaded but hidden during TTS.
-  // We need an explicit visibility state.
-  const [areOptionsVisible, setAreOptionsVisible] = useState(false);
-
-  // Sync visibility with options availability and loading state
-  // But strictly controlled: only show when we decide (e.g. after TTS or load)
-
-  // Update toggleOptions to use state (renaming internal helper if needed or just using setAreOptionsVisible)
-  function toggleOptions(show: boolean) {
-    setAreOptionsVisible(show);
+  async function handleSave() {
+    if (!user) return;
+    const toastId = toast.loading("Saving...");
+    try {
+      await GameService.saveGame({
+        userId: user.googleId,
+        genreKey,
+        gameHistory,
+        gameContent,
+        currentOptions,
+        currentImages: cinematicSegments.map(s => s.image || ""),
+        _id: savedGameState?._id
+      });
+      toast.success("Saved!", { id: toastId });
+    } catch (e) { toast.error("Save failed", { id: toastId }); }
   }
 
-  // Effect to restore visibility on load
-  useEffect(() => {
-    if (savedGameState && savedGameState.currentOptions && savedGameState.currentOptions.length > 0) {
-      // If we have options from save, ensure they are visible after a delay
-      // Logic inside the existing load useEffect handles calling updateOptionButtons
-      // We just need to ensure toggleOptions(true) is called there.
-    }
-  }, [savedGameState]);
 
-  // Apply theme globally on mount/change
-  useEffect(() => {
-    if (genreKey) {
-      setTheme(genreKey as AdventureGenre);
-    }
-  }, [genreKey, setTheme]);
-
-  // --- Helper to split text into sentences ---
-  function splitIntoSentences(text: string): string[] {
-    return text.match(/[^.!?]+[.!?]+["']?|[^.!?]+$/g) || [text];
-  }
-
-  // --- Cinematic Overlay Logic ---
-  const [currentSentence, setCurrentSentence] = useState<string>("");
-  const [overlayVisible, setOverlayVisible] = useState(false);
-
-  // Override advanceCinematicSegment to handle sentence-by-sentence
-  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
-  const [sentences, setSentences] = useState<string[]>([]);
-
-  const playSentence = async (text: string) => {
-    if (!text) return;
-    setOverlayVisible(false); // Brief fade out between sentences?
-    // Actually, improved "Reset It" might mean:
-    // Text 1 appears -> Audio -> Text 1 fades -> Text 2 appears...
-
-    // Slight delay to ensure fade out transition if already visible
-    // But setting state is batched.
-
-    setTimeout(async () => {
-      setCurrentSentence(text);
-      setOverlayVisible(true);
-      await prepareText(text);
-      start();
-    }, 200);
-  };
-
-  // When a new segment starts, we split it into sentences and start logic
-  useEffect(() => {
-    if (cinematicSegments[currentSegmentIndex]) {
-      const text = cinematicSegments[currentSegmentIndex].text;
-      const newSentences = splitIntoSentences(text);
-      setSentences(newSentences);
-      setCurrentSentenceIndex(0);
-
-      // Start playing the first sentence immediately
-      if (newSentences.length > 0) {
-        playSentence(newSentences[0]);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSegmentIndex, cinematicSegments]);
-
-  // Called when audio for the VALID sentence ends
-  const advanceSentence = async () => {
-    setOverlayVisible(false); // Fade out old
-    // Short delay for fade
-    await new Promise(r => setTimeout(r, 600));
-
-    const nextIdx = currentSentenceIndex + 1;
-    if (nextIdx < sentences.length) {
-      setCurrentSentenceIndex(nextIdx);
-      playSentence(sentences[nextIdx]);
-    } else {
-      // End of paragraph, go to next Segment (Image change)
-      advanceCinematicSegment();
-    }
-  };
-
-  const advanceCinematicSegment = async () => {
-    const nextIndex = currentSegmentIndex + 1;
-    if (nextIndex < cinematicSegments.length) {
-
-      // Wait for image if it's still generating
-      let nextSegment = cinematicSegments[nextIndex];
-      let retries = 0;
-      while (!nextSegment.image && retries < 20) {
-        await new Promise(r => setTimeout(r, 500));
-        nextSegment = cinematicSegments[nextIndex];
-        break; // Simplifying logic as discussed
-      }
-
-      setCurrentSegmentIndex(nextIndex);
-
-    } else {
-      // Sequence finished, show options
-      setAreOptionsVisible(true);
-    }
-  }
-
+  // --- RENDER ---
   return (
     <div className={`game-container`}>
       <Toaster position="top-right" />
       <BackgroundMusic audioFile={audioFile} />
 
-      {/* Hidden Narrator to drive Audio */}
       {((voicesLoaded || !!audioData) && actualContent != null) && (
         <TextNarrator
           text={actualContent}
@@ -702,30 +449,35 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
           isLoadingAudio={isLoadingAudio}
           onComplete={() => {
             onAudioComplete();
-            // Instead of directly advancing segment, we advance SENTENCE
+            // Explicitly call advance logic here
             advanceSentence();
           }}
         />
       )}
 
-      {/* Main Stage */}
-      <div className="game-image-container fade-in">
-        {/* Layered Images for Crossfade could be implemented here, 
-             for now just the current image */}
+      <div 
+        className="game-image-container fade-in" 
+        onClick={() => {
+          if (!isProcessing && !areOptionsVisible) {
+            advanceSentence();
+          }
+        }}
+        style={{ cursor: (!isProcessing && !areOptionsVisible) ? 'pointer' : 'default' }}
+      >
         {currentImage && (
           <img src={currentImage} alt="Scene" className="game-scene-image" />
         )}
-
-        {/* Cinematic Text Overlay */}
         <div className={`cinematic-text-overlay ${overlayVisible ? 'visible' : ''}`}>
           <p>{currentSentence}</p>
+          <div className="click-hint">{t('click_to_advance') || "Click to advance"}</div>
         </div>
       </div>
 
-      <div className="spinner" style={{ display: showSpinner ? 'block' : 'none' }}>{t('loadingText')}</div>
+      <div className="spinner" style={{ display: isProcessing && !currentImage ? 'block' : 'none' }}>
+        {t('loadingText')}
+      </div>
 
-      {/* Options Container */}
-      <div id="options" className={areOptionsVisible && !showSpinner ? "fade-in-up" : ""} style={{ display: (areOptionsVisible && !showSpinner) ? 'flex' : 'none' }}>
+      <div id="options" className={areOptionsVisible && !isProcessing ? "fade-in-up" : ""} style={{ display: (areOptionsVisible && !isProcessing) ? 'flex' : 'none' }}>
         <p className="choose-instruction fade-in-delayed">{t("choose_option")}</p>
         <button ref={option1} onClick={() => sendChoice(1)} disabled={!currentOptions[0]}>{currentOptions[0] || "Option 1"}</button>
         <button ref={option2} onClick={() => sendChoice(2)} disabled={!currentOptions[1]}>{currentOptions[1] || "Option 2"}</button>
@@ -733,47 +485,16 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
       </div>
 
       {user && (
-        <button
-          onClick={handleSave}
-          title="Save Game"
-          style={{
-            position: 'fixed',
-            bottom: '20px',
-            right: '20px',
-            background: 'var(--panel-bg)', // Use theme var
-            color: 'var(--primary-color)',
-            border: '2px solid var(--primary-color)',
-            borderRadius: '50%',
-            width: '50px',
-            height: '50px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            zIndex: 1000
-          }}
-        >
+        <button onClick={handleSave} className="save-button" style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}>
           <FiSave size={24} />
         </button>
       )}
 
-      <button
-        onClick={handleExit}
-        style={{
-          position: 'fixed',
-          top: '20px',
-          left: '20px',
-          background: 'transparent',
-          border: 'none',
-          color: 'var(--text-color)',
-          fontSize: '1.5rem',
-          cursor: 'pointer',
-          zIndex: 100
-        }}>
+      <button onClick={handleExit} className="exit-button" style={{ position: 'fixed', top: 20, left: 20, zIndex: 1000, background: 'transparent', border: 'none', color: 'white', fontSize: '1.5rem' }}>
         ✕
       </button>
     </div>
   );
+};
 
-}
 export default Game;
