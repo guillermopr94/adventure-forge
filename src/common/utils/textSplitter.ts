@@ -44,3 +44,11 @@ export const splitFirstSentence = (text: string): [string, string] => {
     // Fallback: No punctuation found, return full text
     return [text, ""];
 };
+
+export const splitIntoSentences = (text: string): string[] => {
+    // Basic sentence splitting using regex
+    // Looks for . ! ? followed by space or end of string
+    if (!text) return [];
+    const segments = text.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g);
+    return segments ? segments.map(s => s.trim()) : [text];
+};

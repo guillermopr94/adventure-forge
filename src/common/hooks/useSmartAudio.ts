@@ -29,6 +29,7 @@ export const useSmartAudio = (
     // To handle the full text for final state
     const fullTextRef = useRef("");
     const part2TextRef = useRef("");
+    const cacheRef = useRef<Map<string, Promise<string | null>>>(new Map());
 
     const calculateDuration = (base64Data: string, text: string) => {
         // Check for MP3 header (ID3 or Frame Sync) - rudimentary check
@@ -65,6 +66,55 @@ export const useSmartAudio = (
         }
     };
 
+    // New Prefetch Method
+    const prefetch = (text: string): Promise<string | null> | undefined => {
+        let part1 = text;
+        // Logic must match prepareText
+        if (audioGenerator?.shouldSplitText) {
+            const parts = splitFirstSentence(text);
+            part1 = parts[0];
+        }
+
+        if (part1.trim()) {
+            if (!cacheRef.current.has(part1)) {
+                console.log("Prefetching audio for:", part1.substring(0, 20) + "...");
+                const promise = generateChunk(part1);
+                cacheRef.current.set(part1, promise);
+                return promise;
+            } else {
+                return cacheRef.current.get(part1);
+            }
+        }
+        return undefined;
+    };
+
+    // New Batch Prefetch
+    const prefetchBatch = async (texts: string[]) => {
+        // ... (existing implementation)
+        if (!texts || texts.length === 0) return;
+        if (!audioGenerator?.generateBatch) return;
+        const needed = texts.filter(t => t.trim() && !cacheRef.current.has(t));
+        if (needed.length === 0) return;
+        console.log("Batch Prefetching:", needed.length, "items");
+        const batchPromise = audioGenerator.generateBatch(needed);
+        needed.forEach((text, index) => {
+            const itemPromise = batchPromise.then(res => {
+                if (res && res.audios && res.audios[index]) {
+                    return res.audios[index];
+                }
+                return null;
+            });
+            cacheRef.current.set(text, itemPromise);
+        });
+    };
+
+    // New Manual Cache Injection (for Streaming)
+    const cacheAudio = (text: string, audioData: string) => {
+        if (!text || !audioData) return;
+        console.log("Injecting audio into cache:", text.substring(0, 20) + "...");
+        cacheRef.current.set(text, Promise.resolve(audioData));
+    };
+
     const prepareText = async (text: string) => {
         setAudioData(undefined); // Clear previous audio immediately
         setIsLoading(true);
@@ -88,8 +138,15 @@ export const useSmartAudio = (
 
         console.log("Audio prep:", { shouldSplit: audioGenerator?.shouldSplitText, part1: part1.substring(0, 20) + "...", part2Length: part2.length });
 
-        // Fetch 1st chunk
-        const audio1 = await generateChunk(part1);
+        // Fetch 1st chunk (Check Cache First)
+        let audio1: string | null = null;
+        if (cacheRef.current.has(part1)) {
+            console.log("Using cached audio for:", part1.substring(0, 20) + "...");
+            audio1 = await cacheRef.current.get(part1) || null;
+            cacheRef.current.delete(part1); // Consume cache
+        } else {
+            audio1 = await generateChunk(part1);
+        }
 
         if (audio1) {
             const duration1 = calculateDuration(audio1, part1);
@@ -171,6 +228,9 @@ export const useSmartAudio = (
         visualText,
         visualDuration,
         prepareText,
+        prefetch,
+        prefetchBatch,
+        cacheAudio,
         start,
         onAudioComplete
     };
