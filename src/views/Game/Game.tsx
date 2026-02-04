@@ -55,6 +55,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
 
   // Cinematic Overlay State
   const [currentSentence, setCurrentSentence] = useState<string>("");
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [sentences, setSentences] = useState<string[]>([]);
 
