@@ -12,7 +12,7 @@ interface LoadGameModalProps {
 }
 
 const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) => {
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const { t } = useTranslation();
     const [saves, setSaves] = useState<GameSaveDTO[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -23,18 +23,18 @@ const LoadGameModal: React.FC<LoadGameModalProps> = ({ onClose, onLoadGame }) =>
     }, [user]);
 
     const loadSaves = async () => {
-        if (!user?.googleId) return;
+        if (!user?.googleId || !token) return;
         setIsLoading(true);
-        const list = await GameService.listGames(user.googleId);
+        const list = await GameService.listGames(token);
         setSaves(list);
         setIsLoading(false);
     };
 
     const handleDelete = async (saveId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!user?.googleId) return;
+        if (!user?.googleId || !token) return;
         if (window.confirm("Are you sure you want to delete this save?")) {
-            await GameService.deleteGame(user.googleId, saveId);
+            await GameService.deleteGame(token, saveId);
             loadSaves(); // Reload list
         }
     };
