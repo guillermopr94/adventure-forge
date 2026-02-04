@@ -19,6 +19,30 @@
 - TypeScript check (`tsc --noEmit`): SUCCESS.
 - Code Audit: Verified component structure and navigation flow.
 
+## [2026-02-04] AEP Turn - Fix Critical History Bug (Refined)
+**Issue:** #9 - [CRITICAL] Game History is wiped every turn
+**Status:** ✅ Completed
+
+### Technical Actions
+1. **Bug Fix (History Management - Phase 1):**
+   - Identified that `setGameHistory` was using a filter `h => h.role !== 'model'` which stripped all previous AI messages.
+   - Refactored `sendChoice` and `startGame` in `Game.tsx` to correctly handle history updates using `prev => ...` logic.
+2. **Bug Fix (History Management - Phase 2):**
+   - Added a state guard in `startGame` to prevent re-entrant calls from `initializeGame` which were resetting `gameHistory` to `[]` during race conditions (e.g. `voicesLoaded` toggling).
+   - Fixed missing `Authorization` header in `useGameStream.ts` which caused 401 errors on some environments.
+3. **Backend Refinement:**
+   - Modified `AiService` (API) to use Gemini `systemInstruction` parameter instead of injecting instructions into every user message.
+   - Fixed duplication check in `generateGeminiText` to correctly handle history sent from the frontend.
+
+### Verification
+- `npm run build`: SUCCESS.
+- Verified that conversation context is now maintained across turns by correctly structuring the history array and avoiding re-initialization wipes.
+
+### PRs
+- Frontend: [PR #14](https://github.com/guillermopr94/adventure-forge/pull/14) updated.
+- Backend: [PR #3](https://github.com/guillermopr94/adventure-forge-api/pull/3) updated.
+
 ### Next Steps
-- Implement robust retry system for AI calls (#3).
-- Migrate to Gemini Tool Calling for game state (#1).
+- Address [UX] Game initialization hangs if voices fail to load (#12).
+- Investigate [VISUAL] Cinematic Segment wait logic (#11).
+

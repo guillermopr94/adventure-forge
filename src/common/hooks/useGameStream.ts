@@ -43,6 +43,7 @@ export const useGameStream = (
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}`,
                     'x-google-api-key': userToken,
                     'x-pollinations-token': pollinationsToken,
                     'x-openai-api-key': openaiKey || ''

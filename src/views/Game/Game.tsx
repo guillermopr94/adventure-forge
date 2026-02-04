@@ -354,6 +354,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   }
 
   async function startGame() {
+    if (isGameStarted) return; // Guard against double calls
     setIsGameStarted(true);
     setGameHistory([]);
 
