@@ -14,6 +14,7 @@ export interface User {
 
 interface AuthContextType {
     user: User | null;
+    token: string | null;
     isAuthenticated: boolean;
     login: (googleToken: string) => Promise<void>;
     logout: () => void;
@@ -25,14 +26,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Restore user from storage on mount
+    // Restore user and token from storage on mount
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
+        const storedToken = localStorage.getItem('google_token');
         if (storedUser) {
             setUser(JSON.parse(storedUser));
+        }
+        if (storedToken) {
+            setToken(storedToken);
         }
     }, []);
 
@@ -44,7 +50,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const userData = response.data;
 
             setUser(userData);
+            setToken(googleToken);
             localStorage.setItem('user', JSON.stringify(userData));
+            localStorage.setItem('google_token', googleToken);
         } catch (error) {
             console.error('Login failed', error);
             setError('Login failed. Please try again.');
@@ -56,11 +64,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const logout = () => {
         googleLogout();
         setUser(null);
+        setToken(null);
         localStorage.removeItem('user');
+        localStorage.removeItem('google_token');
     };
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, isLoading, error }}>
+        <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, login, logout, isLoading, error }}>
             {children}
         </AuthContext.Provider>
     );

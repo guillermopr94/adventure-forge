@@ -32,7 +32,7 @@ const StartScreenContent = (): React.ReactElement => {
     const { currentScreen, userToken, openaiKey, selectedGenreIndex, gameKey } = useNavigation();
     const { setShowSettings } = useSettings();
     const { t } = useTranslation();
-    const { login, user, logout } = useAuth();
+    const { login, user, token, logout } = useAuth();
     const selectedGenre = ADVENTURE_TYPES[selectedGenreIndex];
 
     return (
@@ -82,6 +82,7 @@ const StartScreenContent = (): React.ReactElement => {
                 <Game
                     key={gameKey} // Force remount on reset
                     userToken={userToken}
+                    authToken={token}
                     openaiKey={openaiKey}
                     gameType={t(selectedGenre.id)}
                     genreKey={selectedGenre.id}

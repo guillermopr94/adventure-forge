@@ -16,6 +16,7 @@ export interface StreamEvent {
 
 export const useGameStream = (
     userToken: string,
+    authToken: string | null,
     pollinationsToken: string,
     openaiKey: string | null
 ) => {
@@ -39,14 +40,20 @@ export const useGameStream = (
         onEventRef.current = onEvent;
 
         try {
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+                'x-google-api-key': userToken,
+                'x-pollinations-token': pollinationsToken,
+                'x-openai-api-key': openaiKey || ''
+            };
+
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
             const response = await fetch(`${config.apiUrl}/game/stream`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-google-api-key': userToken,
-                    'x-pollinations-token': pollinationsToken,
-                    'x-openai-api-key': openaiKey || ''
-                },
+                headers,
                 body: JSON.stringify({ prompt, history, voice, genre, lang })
             });
 
@@ -91,7 +98,7 @@ export const useGameStream = (
             setIsStreaming(false);
         }
 
-    }, [userToken, pollinationsToken, openaiKey]);
+    }, [userToken, authToken, pollinationsToken, openaiKey]);
 
     return {
         startStream,

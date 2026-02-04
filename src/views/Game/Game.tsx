@@ -18,13 +18,14 @@ import { AudioGenerator } from "../../common/services/ai/AudioGenerator";
 import { useTheme } from "../../common/theme/ThemeContext";
 
 interface GameProps {
-  userToken: string;
+  userToken: string; // Gemini API Key
+  authToken: string | null; // Google Auth ID Token
   openaiKey?: string;
   gameType: string;
   genreKey: string;
 }
 
-const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey }): React.ReactElement => {
+const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, genreKey }): React.ReactElement => {
 
   const option1 = useRef<HTMLButtonElement>(null);
   const option2 = useRef<HTMLButtonElement>(null);
@@ -33,7 +34,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { setPollinationsToken, pollinationsToken, navigate, savedGameState, setSavedGameState, goBack } = useNavigation();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { setTheme } = useTheme();
 
   const [voicesLoaded, setVoicesLoaded] = useState(false);
@@ -46,7 +47,6 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   // Text & Interaction State
   const [gameContent, setGameContent] = useState<string[]>([]);
-  const [actualContent, setActualContent] = useState<string | null>(null);
   const [gameHistory, setGameHistory] = useState<any[]>(savedGameState ? savedGameState.gameHistory : []);
   const [currentOptions, setCurrentOptions] = useState<string[]>([]);
   const [areOptionsVisible, setAreOptionsVisible] = useState(false);
@@ -55,8 +55,8 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   // Cinematic Overlay State
   const [currentSentence, setCurrentSentence] = useState<string>("");
-  const [overlayVisible, setOverlayVisible] = useState(false);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
+  const [overlayVisible, setOverlayVisible] = useState(false);
   const [sentences, setSentences] = useState<string[]>([]);
 
   // Theme & Audio Config
@@ -67,6 +67,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   useEffect(() => { cinematicSegmentsRef.current = cinematicSegments; }, [cinematicSegments]);
 
   const isAdvancingRef = useRef(false);
+  const currentSentenceIndexRef = useRef(0);
 
   // --- Voice Handling ---
   const updateVoices = () => {
@@ -74,9 +75,6 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     setVoices(availableVoices);
     if (availableVoices.length > 0) {
       setVoicesLoaded(true);
-    } else {
-      // Fallback for some browsers if voices are delayed but we want to start
-      // setVoicesLoaded(true); 
     }
   };
 
@@ -103,14 +101,19 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
       shouldSplitText: false,
       generate: async (text: string) => {
         try {
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'x-google-api-key': userToken,
+            'x-pollinations-token': pollinationsToken,
+            'x-openai-api-key': openaiKey || ''
+          };
+          if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+          }
+
           const response = await fetch(`${config.apiUrl}/ai/audio`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-google-api-key': userToken,
-              'x-pollinations-token': pollinationsToken,
-              'x-openai-api-key': openaiKey || ''
-            },
+            headers,
             body: JSON.stringify({ text, voice: selectedVoice?.name || 'alloy', genre: genreKey, lang: language })
           });
           if (!response.ok) throw new Error("Backend Audio Failed");
@@ -122,17 +125,15 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
         }
       },
       generateBatch: async (texts: string[]) => {
-        // Batch fallback if needed, but Streaming handles this now
         return { audios: [] };
       }
     };
     setAudioGenerator(backendAudioGenerator);
-  }, [userToken, openaiKey, pollinationsToken, language, genreKey, selectedVoice]);
+  }, [userToken, authToken, openaiKey, pollinationsToken, language, genreKey, selectedVoice]);
 
   // --- Hooks ---
   const handleDurationSet = useCallback((ms: number) => { }, []);
 
-  // Forward Declaration for useSmartAudio
   const advanceSentence = async () => {
     if (isAdvancingRef.current) return;
     isAdvancingRef.current = true;
@@ -141,8 +142,9 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
       setOverlayVisible(false);
       await new Promise(r => setTimeout(r, 600)); // Fade delay
 
-      const nextIdx = currentSentenceIndex + 1;
+      const nextIdx = currentSentenceIndexRef.current + 1;
       if (nextIdx < sentences.length) {
+        currentSentenceIndexRef.current = nextIdx;
         setCurrentSentenceIndex(nextIdx);
         playSentence(sentences[nextIdx], nextIdx);
       } else {
@@ -155,7 +157,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   const handleSequenceEnd = useCallback(() => {
     advanceSentence();
-  }, [currentSentenceIndex, sentences]); // Dependencies handled by state updates usually
+  }, [sentences]);
 
   const {
     audioData,
@@ -171,16 +173,11 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     language,
     genreKey,
     handleDurationSet,
-    handleSequenceEnd, // We need to be careful with closure here. ideally use ref or simplified logic.
+    handleSequenceEnd,
     audioGenerator,
   );
 
-  // Re-bind handleSequenceEnd to the actual function logic if hook captures it
-  // Since handleSequenceEnd uses 'advanceSentence' which uses state, it's complex.
-  // Ideally 'onComplete' in TextNarrator calls 'advanceSentence' directly.
-  // And useSmartAudio just triggers 'onSequenceEnd' when audio finishes playing internally.
-
-  const { startStream, isStreaming: isStreamProcessing } = useGameStream(userToken, pollinationsToken, openaiKey);
+  const { startStream, isStreaming: isStreamProcessing } = useGameStream(userToken, authToken, pollinationsToken, openaiKey);
 
   // --- Helper Functions ---
   function toggleOptions(show: boolean) {
@@ -191,7 +188,6 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     setCurrentOptions(opts);
     const buttons = [option1, option2, option3];
     for (let i = 0; i < 3; i++) {
-      // Safe access
       if (buttons[i].current) {
         if (opts[i]) {
           buttons[i].current!.textContent = opts[i];
@@ -209,19 +205,15 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   async function sendChoice(choiceIndex: number) {
     toggleOptions(false);
     setIsProcessing(true);
-    setActualContent(null);
     setCurrentImage(null);
 
-    // Get choice text
     const buttons = [option1, option2, option3];
     const choiceText = buttons[choiceIndex - 1].current?.textContent || `Option ${choiceIndex}`;
     const prompt = `I choose option ${choiceIndex}: ${choiceText}. What happens next?`;
 
-    // Optimistic UI
     const currentHistory = [...gameHistory, { role: "user", parts: [{ text: prompt }] }];
     setGameHistory(currentHistory);
 
-    // Start Streaming
     await startStream(
       prompt,
       currentHistory,
@@ -234,9 +226,9 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
             const newSegments = event.paragraphs.map(p => ({ text: p, image: undefined }));
             setCinematicSegments(newSegments);
             setCurrentSegmentIndex(0);
+            currentSentenceIndexRef.current = 0;
             if (event.options) updateOptionButtons(event.options);
 
-            // Update history
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
             setGameHistory(prev => {
               const last = prev[prev.length - 1];
@@ -254,7 +246,6 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
               if (copy[event.index!]) copy[event.index!].image = event.data;
               return copy;
             });
-            // Preload
             const img = new Image();
             img.src = event.data;
             if (event.index === 0) setCurrentImage(event.data);
@@ -269,9 +260,6 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
           toast.error(`Stream Error: ${event.error}`);
           setIsProcessing(false);
         }
-        else if (event.type === 'done') {
-          // Stream finished.
-        }
       }
     );
   }
@@ -281,15 +269,12 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   const playSentence = async (text: string, index: number) => {
     if (!text) return;
 
-    // Prefetch next
     const nextText = sentences[index + 1];
     if (nextText) prefetch(nextText);
 
-    // Show text & Play Audio
     setTimeout(async () => {
       setCurrentSentence(text);
       setOverlayVisible(true);
-      // This will wait for cached audio (from stream) or fetch it
       await prepareText(text);
       start();
     }, 200);
@@ -297,38 +282,34 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   const advanceCinematicSegment = async () => {
     const nextIndex = currentSegmentIndex + 1;
-    if (nextIndex < cinematicSegmentsRef.current.length) {
-      // Wait for next image to be ready (Visual Sync)
-      let retries = 0;
-      while (!cinematicSegmentsRef.current[nextIndex]?.image && retries < 40) { // 20s timeout
-        await new Promise(r => setTimeout(r, 500));
-        retries++;
-      }
+    if (nextIndex < cinematicSegments.length) {
       setCurrentSegmentIndex(nextIndex);
+      currentSentenceIndexRef.current = 0;
     } else {
       setAreOptionsVisible(true);
       setIsProcessing(false);
     }
   };
 
-  // Tracking Effect for Segment Changes
   const lastProcessedTextRef = useRef<string | null>(null);
 
   useEffect(() => {
     const currentSegment = cinematicSegments[currentSegmentIndex];
     if (currentSegment) {
-      // --- VISUAL SYNC CHECK ---
-      if (!currentSegment.image) return; // Wait until image arrives via stream update
-
       const text = currentSegment.text;
-      // Only init if text changed OR we were waiting for image for this text
+      
+      if (!currentSegment.image) {
+          setOverlayVisible(false);
+          return; 
+      }
+
       if (lastProcessedTextRef.current !== text || (!currentImage && currentSegment.image)) {
         lastProcessedTextRef.current = text;
         setCurrentImage(currentSegment.image);
 
         const newSentences = splitIntoSentences(text);
         setSentences(newSentences);
-        setCurrentSentenceIndex(0);
+        currentSentenceIndexRef.current = 0;
 
         if (newSentences.length > 0) {
           playSentence(newSentences[0], 0);
@@ -337,7 +318,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
     } else {
       lastProcessedTextRef.current = null;
     }
-  }, [currentSegmentIndex, cinematicSegments]);
+  }, [currentSegmentIndex, cinematicSegments, currentImage]);
 
 
   // --- Initialization & Save ---
@@ -383,6 +364,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
             const newSegments = event.paragraphs.map(p => ({ text: p, image: undefined }));
             setCinematicSegments(newSegments);
             setCurrentSegmentIndex(0);
+            currentSentenceIndexRef.current = 0;
             if (event.options) updateOptionButtons(event.options);
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
             setGameHistory(prev => {
@@ -419,11 +401,8 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   const initializeGame = () => {
     if (!isGameStarted) {
-      console.log("Initializing Game. Voices Loaded:", voicesLoaded);
       if (voicesLoaded) {
         startGame();
-      } else {
-        // toast("Waiting for voices...");
       }
     }
   };
@@ -436,7 +415,7 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   }
 
   async function handleSave() {
-    if (!user) return;
+    if (!user || !token) return;
     const toastId = toast.loading("Saving...");
     try {
       await GameService.saveGame({
@@ -447,28 +426,25 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
         currentOptions,
         currentImages: cinematicSegments.map(s => s.image || ""),
         _id: savedGameState?._id
-      });
+      }, token);
       toast.success("Saved!", { id: toastId });
     } catch (e) { toast.error("Save failed", { id: toastId }); }
   }
 
 
-  // --- RENDER ---
   return (
     <div className={`game-container`}>
       <Toaster position="top-right" />
       <BackgroundMusic audioFile={audioFile} />
 
-      {((voicesLoaded || !!audioData) && actualContent != null) && (
+      {((voicesLoaded || !!audioData) && currentSentence !== "") && (
         <TextNarrator
-          text={actualContent}
+          text={currentSentence}
           voice={selectedVoice}
           audioData={audioData}
           isLoadingAudio={isLoadingAudio}
           onComplete={() => {
             onAudioComplete();
-            // Explicitly call advance logic here
-            advanceSentence();
           }}
         />
       )}

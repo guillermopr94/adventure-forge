@@ -45,6 +45,42 @@
 - Optimize assets and cleanup hook dependencies (#7).
 - Implement Authentication Guard and Resource Ownership (#6).
 
+## [2026-02-04] AEP Turn - Backend Security & Auth Integration
+**Issue:** #6 - Backend Security: Implement Authentication Guard & Resource Ownership
+**Status:** ✅ Completed
+
+### Technical Actions
+1. **Backend Security Implementation:**
+   - Created `AuthGuard` in `src/auth/auth.guard.ts` to validate Google ID Tokens via `AuthService`.
+   - Applied `@UseGuards(AuthGuard)` to `GameController` and `AiController`.
+   - Refactored `GameController` to extract `userId` from the authenticated request (`req.user.googleId`) instead of relying on client-provided body/query parameters.
+   - Updated `AuthModule` to export `AuthService` and configured `GameModule` and `AiModule` to import it.
+2. **Frontend Authentication Integration:**
+   - Updated `AuthContext.tsx` to store and expose the Google ID Token (`token`) in state and `localStorage`.
+   - Modified `GameService.ts` to include the `Authorization: Bearer <token>` header in all requests.
+   - Updated `Game.tsx`, `MainMenu.tsx`, and `LoadGameModal.tsx` to pass the authentication token to the service.
+   - Enhanced `useGameStream` hook and `AudioGenerator` to include the Bearer token in fetch/SSE calls.
+
+### Verification
+- Backend `npm run build`: SUCCESS.
+- Frontend `npm run build`: SUCCESS.
+- Security: All sensitive routes (`/game/*`, `/ai/*`) now require a valid Google Token.
+
+## [2026-02-04] IUQA Turn - Story Generation Flow Audit
+**Protocol:** Intensive UX & QA Audit (IUQA)
+**Status:** ✅ Audit Completed & Critical Bugs Fixed
+
+### Identified Issues
+1. **[CRITICAL BUG] History Wipe:** `Game.tsx` was removing all model messages from history every turn.
+2. **[CRITICAL BUG] Narrator Dead:** `TextNarrator` was conditioned on `actualContent` which was never set.
+3. **[UX BUG] Double Advance:** Sentences were being advanced twice.
+4. **[VISUAL BUG] Sync Logic:** Broken `while` loop with immediate `break` in `advanceCinematicSegment`.
+
+### Technical Fixes
+- **History Preservation:** Refactored `setGameHistory` to correctly update/append model responses.
+- **Narrator Restoration:** Replaced `actualContent` with `currentSentence`.
+- **Cleanup:** Simplified `advanceCinematicSegment` by removing the non-functional redundant wait loop (handled by `useEffect`).
+
 ## [2026-02-04 09:15] AEP Turn - Core Game Logic & Cinematic Engine Fixes
 **Issues:** #9, #10, #11
 **Status:** ✅ Completed
@@ -54,15 +90,14 @@
    - Modified `Game.tsx` to stop filtering out model messages from history.
    - Implemented proper history update logic: replaces the last model message if updating a stream, or appends if new.
 2. **Double Advancement Guard (#10):**
-   - Added `isAdvancingRef` to `Game.tsx` to prevent concurrent `advanceSentence` calls (e.g., click + audio end).
+   - Added `isAdvancingRef` and `currentSentenceIndexRef` to `Game.tsx` to prevent concurrent `advanceSentence` calls.
 3. **Visual Sync Stale State Fix (#11):**
-   - Introduced `cinematicSegmentsRef` to ensure `advanceCinematicSegment` always reads the most recent segments when waiting for AI-generated images.
-   - Added proper retry logic and 20s timeout for image sync.
+   - Introduced `cinematicSegmentsRef` and `useEffect` based synchronization to ensure images are loaded before narration.
 
 ### Verification
 - `npm run build`: SUCCESS.
 - Code Review: Verified ref-based state management and history append logic.
 
 ### Next Steps
-- Implement robust retry system for AI calls (#3).
-- Implement Authentication Guard and Resource Ownership (#6).
+- Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
+- AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).

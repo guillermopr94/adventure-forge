@@ -9,7 +9,7 @@ import { useTheme } from '../../common/theme/ThemeContext';
 import LoadGameModal from './LoadGameModal';
 
 const MainMenu: React.FC = () => {
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const { navigate, setSavedGameState, setSelectedGenreIndex } = useNavigation();
     const { t } = useTranslation();
     const { setTheme } = useTheme();
@@ -24,10 +24,10 @@ const MainMenu: React.FC = () => {
     }, [user]);
 
     const checkSave = async () => {
-        if (!user) return;
+        if (!user || !token) return;
         setIsLoading(true);
         // We just check if there are ANY games to show the button
-        const saves = await GameService.listGames(user.googleId);
+        const saves = await GameService.listGames(token);
         if (saves && saves.length > 0) {
             setHasSave(true);
             // Optionally set theme from the latest save?
@@ -46,9 +46,9 @@ const MainMenu: React.FC = () => {
     };
 
     const onSelectLoadGame = async (saveId: string, genreKey: string) => {
-        if (!user) return;
+        if (!user || !token) return;
         setIsLoading(true);
-        const save = await GameService.loadGame(user.googleId, saveId);
+        const save = await GameService.loadGame(token, saveId);
         if (save) {
             setSavedGameState(save);
             // Ensure theme is set for game as well (though Game.tsx does it too)
