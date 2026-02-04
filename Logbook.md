@@ -101,3 +101,34 @@
 ### Next Steps
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
 - AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
+
+## [2026-02-04 11:27] AEP Turn - Security: Environment Setup Documentation
+**Issue:** #19 - [SECURITY] Secrets exposed in .env file
+**Status:** ✅ Completed
+**PR:** [#21](https://github.com/guillermopr94/adventure-forge/pull/21)
+
+### Technical Actions
+1. **Security Audit:**
+   - Verified `.env` is already in `.gitignore` (present, no changes needed).
+   - Confirmed `.env` was **never committed** to repository history (no cleanup needed).
+   - Identified repository is **PUBLIC** - critical to prevent future accidental exposure.
+2. **Documentation & Best Practices:**
+   - Created `.env.example` with placeholder values for `REACT_APP_GOOGLE_CLIENT_ID`.
+   - Added comprehensive **Getting Started** section to `README.md`:
+     - Prerequisites
+     - Installation steps
+     - Environment variable configuration guide
+     - Google OAuth setup instructions
+     - Security warning about never committing `.env`
+
+### Verification
+- `git log --all --full-history -- .env`: No commits (confirmed secure).
+- `git status`: `.env` not tracked (confirmed `.gitignore` working).
+- PR created and branch pushed successfully.
+
+### Security Status
+**✅ No secrets were exposed** - `.env` was never committed to the repository. This fix is **preventive**, ensuring all future contributors follow secure environment setup practices.
+
+### Next Steps
+- Fix #9: Game History Context Loss (P0).
+- Fix #10: Double advanceSentence UX bug (P0).
