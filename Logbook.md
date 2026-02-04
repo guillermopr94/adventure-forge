@@ -102,7 +102,20 @@
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
 - AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
 
-## [2026-02-04 14:00] AEP Turn - Environment Security & Documentation
+## [2026-02-04 17:00] IUQA Turn - Intensive UX & QA Audit
+**Protocol:** Intensive UX & QA Audit (IUQA)
+**Flow:** Story Generation & Navigation
+**Status:** ✅ Audit Completed - 3 New Issues Created
+
+### Findings & Issues
+1. **[BUG] Typewriter Regression (#26):** The typewriter effect is implemented as a component but not integrated into `Game.tsx`.
+2. **[UX] Token Waste (#27):** Legacy tagging instructions (`[PARAGRAPH]`) are still sent to the AI despite the backend's migration to JSON mode.
+3. **[A11Y] Missing ARIA Labels (#28):** Icon buttons in selection and game screens lack labels.
+
+### Actions Taken
+- Created GitHub Issues #26, #27, #28.
+- Verified path to `Typewriter.tsx` for incoming fix.
+
 **Issue:** #19 - [SECURITY] Secrets exposed in .env file
 **Status:** ✅ Completed
 
@@ -122,3 +135,33 @@
 ### Next Steps
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
 - AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
+
+## [2026-02-04 17:15] AEP Turn - AI Generation Resilience & Puter Integration
+**Issue:** #10 (Backend) - [STABILITY] Image Generation Resilience & Fallback Extension
+**Status:** ✅ Completed (PR #12 Merged)
+
+### Technical Actions
+1. **Puter AI Integration (Chat & Images):**
+   - Implemented `generatePuterText` and `generatePuterImage` using Puter's REST drivers API (`api.puter.com/drivers/call`).
+   - Integrated Puter as a high-reliability fallback in `generateText`, `generateGameTurn`, and `generateImage`.
+   - Supported models: `claude-sonnet-4`, `gpt-4o` for text; `gpt-image-1-mini` for images.
+   - Added `PUTER_TOKEN` requirement to `.env.example`.
+2. **Image Generation Stabilization:**
+   - Expanded image fallback strategy to 6 levels: Gemini → Puter → Pollinations (Flux) → Turbo → SDXL → Legacy.
+   - Enhanced retry logic with exponential backoff specifically for 429 errors.
+3. **Deployment Process:**
+   - Created **PR #12** in `adventure-forge-api` explaining the changes.
+   - Merged PR #12 into `main` to trigger Render deployment.
+4. **Backlog Management:**
+   - Created Issue **#11** (Backend) for request queueing.
+   - Updated Issue **#10** with completion status for Puter.
+
+### Verification
+- `npm run build`: SUCCESS (Backend).
+- Strategy Audit: Verified cascading fallbacks for all AI modalities.
+- Code Review: Verified REST payload structure against Puter.js driver protocol.
+- PR Workflow: SUCCESS (Created and Merged).
+
+### Next Steps
+- Implement request queueing to prevent 429 errors (#11).
+- Monitor production for PUTER_TOKEN implementation by user.
