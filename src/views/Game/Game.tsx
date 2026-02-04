@@ -226,7 +226,13 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
             // Update history
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
-            setGameHistory(prev => [...prev.filter(h => h.role !== 'model'), { role: 'model', parts: [{ text: fullText }] }]);
+            setGameHistory(prev => {
+              const last = prev[prev.length - 1];
+              if (last && last.role === 'model') {
+                return [...prev.slice(0, -1), { role: 'model', parts: [{ text: fullText }] }];
+              }
+              return [...prev, { role: 'model', parts: [{ text: fullText }] }];
+            });
           }
         }
         else if (event.type === 'image') {
@@ -373,7 +379,13 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
             setCurrentSegmentIndex(0);
             if (event.options) updateOptionButtons(event.options);
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
-            setGameHistory(prev => [...prev.filter(h => h.role !== 'model'), { role: 'model', parts: [{ text: fullText }] }]);
+            setGameHistory(prev => {
+              const last = prev[prev.length - 1];
+              if (last && last.role === 'model') {
+                return [...prev.slice(0, -1), { role: 'model', parts: [{ text: fullText }] }];
+              }
+              return [...prev, { role: 'model', parts: [{ text: fullText }] }];
+            });
           }
         }
         else if (event.type === 'image') {
