@@ -65,12 +65,10 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
   // --- Voice Handling ---
   const updateVoices = () => {
     const availableVoices = window.speechSynthesis.getVoices();
-    setVoices(availableVoices);
+    console.log("SpeechSynthesis voices updated:", availableVoices.length);
     if (availableVoices.length > 0) {
+      setVoices(availableVoices);
       setVoicesLoaded(true);
-    } else {
-      // Fallback for some browsers if voices are delayed but we want to start
-      // setVoicesLoaded(true); 
     }
   };
 
@@ -79,7 +77,11 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     updateVoices();
 
     // Safety timeout: If no voices after 2s, just start
-    const timer = setTimeout(() => setVoicesLoaded(true), 2000);
+    // Browsers like Chrome on Android might not fire voiceschanged or return empty
+    const timer = setTimeout(() => {
+      console.log("Voice load timeout reached. Current voices:", window.speechSynthesis.getVoices().length);
+      setVoicesLoaded(true);
+    }, 2000);
 
     return () => {
       window.speechSynthesis.removeEventListener("voiceschanged", updateVoices);
