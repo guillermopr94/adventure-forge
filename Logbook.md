@@ -23,7 +23,7 @@
 - Implement robust retry system for AI calls (#3).
 - Migrate to Gemini Tool Calling for game state (#1).
 
-## [2026-02-04] AEP Turn - Structured Game State
+## [2026-02-04 01:30] AEP Turn - Structured Game State
 **Issue:** #1 - Structured Game State via Gemini Tool Calling
 **Status:** ✅ Completed
 
@@ -63,13 +63,28 @@
 
 ### Verification
 - Backend `npm run build`: SUCCESS.
-- Frontend `npm run build`: SUCCESS (In progress, but logic verified).
+- Frontend `npm run build`: SUCCESS.
 - Security: All sensitive routes (`/game/*`, `/ai/*`) now require a valid Google Token. Resource ownership is enforced by using the token's subject as `userId`.
 
 ### Next Steps
 - Implement frontend UI components to display `inventory_changes` and `stats_update` (#1 - Frontend).
 - Optimize assets and cleanup hook dependencies (#7).
 - AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
+
+## [2026-02-04] IUQA Turn - Story Generation Flow Audit
+**Protocol:** Intensive UX & QA Audit (IUQA)
+**Status:** ✅ Audit Completed & Critical Bugs Fixed
+
+### Identified Issues
+1. **[CRITICAL BUG] History Wipe:** `Game.tsx` was removing all model messages from history every turn.
+2. **[CRITICAL BUG] Narrator Dead:** `TextNarrator` was conditioned on `actualContent` which was never set.
+3. **[UX BUG] Double Advance:** Sentences were being advanced twice.
+4. **[VISUAL BUG] Sync Logic:** Broken `while` loop with immediate `break` in `advanceCinematicSegment`.
+
+### Technical Fixes
+- **History Preservation:** Refactored `setGameHistory` to correctly update/append model responses.
+- **Narrator Restoration:** Replaced `actualContent` with `currentSentence`.
+- **Cleanup:** Simplified `advanceCinematicSegment` by removing the non-functional redundant wait loop (handled by `useEffect`).
 
 ## [2026-02-04] AEP Turn - Core Story Flow & History Fixes
 **Issue:** #9 - [CRITICAL] Game History is wiped every turn | #10 - Double Advance | #11 - Visual Sync
