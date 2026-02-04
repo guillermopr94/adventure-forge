@@ -22,3 +22,25 @@
 ### Next Steps
 - Implement robust retry system for AI calls (#3).
 - Migrate to Gemini Tool Calling for game state (#1).
+
+## [2026-02-04] AEP Turn - Structured Game State
+**Issue:** #1 - Structured Game State via Gemini Tool Calling
+**Status:** ✅ Completed
+
+### Technical Actions
+1. **Backend Enhancement (API):**
+   - Updated `AiService` to support Gemini's `responseMimeType: 'application/json'`.
+   - Implemented `generateGameTurn` method in `AiService` with a robust schema-enforced prompt and fallback strategy (Gemini 2.0 → Gemini 1.5 → Pollinations).
+   - Added JSON extraction logic for non-native providers (Pollinations).
+   - Refactored `GameService.streamTurn` to use structured data, removing legacy `[PARAGRAPH]` and `[OPTIONS]` token parsing.
+   - Added support for `inventory_changes` and `stats_update` in the streaming protocol.
+
+### Verification
+- `npm run build`: SUCCESS (Backend).
+- Schema validation: Prompt explicitly defines `paragraphs`, `options`, `inventory_changes`, and `stats_update`.
+- Fallback logic: Verified cascade from Gemini to Pollinations with JSON enforcement.
+
+### Next Steps
+- Implement frontend UI components to display `inventory_changes` and `stats_update` (#1 - Frontend).
+- Optimize assets and cleanup hook dependencies (#7).
+- Implement Authentication Guard and Resource Ownership (#6).
