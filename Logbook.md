@@ -129,3 +129,26 @@
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
 - Optimize assets and cleanup hook dependencies (#7).
 - Resilience: Exponential Retry logic for API calls (#20).
+
+## [2026-02-04 13:50] AEP Turn - Resilience & Retry Logic
+**Issue:** #20 - [RESILIENCE] GameService lacks error handling & retry logic
+**Status:** ✅ Completed
+
+### Technical Actions
+1. **Utility Creation:**
+   - Created `src/common/utils/resilience.ts` containing a `withRetry` helper with exponential backoff.
+   - The helper handles transient errors (429, 5xx, timeouts, network issues) and skips non-retryable ones (400, 401, 403, 404).
+2. **Service Integration:**
+   - Refactored `src/common/services/GameService.ts` to use `withRetry` for all Axios calls (save, load, list, delete).
+3. **Hook & Component Integration:**
+   - Updated `src/common/hooks/useGameStream.ts` to retry the initial stream connection fetch.
+   - Enhanced `src/views/Game/Game.tsx` to retry backend audio generation requests via the `AudioGenerator` service.
+
+### Verification
+- **Frontend Build:** SUCCESS (Verified production build via `react-scripts build`).
+- **Logic Check:** Verified that each retryable operation will attempt up to 3 times (or 2 for non-critical) before failing, improving UX in spotty network conditions.
+
+### Next Steps
+- Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
+- Optimize assets and cleanup hook dependencies (#7).
+- UX: Image Loading Placeholder / Shimmer (#17).
