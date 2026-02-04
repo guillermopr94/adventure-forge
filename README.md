@@ -24,3 +24,46 @@ Adventure Forge leverages advanced Large Language Models (LLMs) and image synthe
 ## 🌍 Live Demo
 
 [Explore the Forge](https://guillermopr94.github.io/adventure-forge/)
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 16+ and npm
+- Google Cloud Project with OAuth 2.0 credentials
+
+### Environment Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/guillermopr94/adventure-forge.git
+   cd adventure-forge
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Edit `.env` and add your Google OAuth credentials:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   - Create OAuth 2.0 Client ID (Web application)
+   - Add authorized JavaScript origins: `http://localhost:5173`
+   - Copy the Client ID to `.env`:
+     ```
+     REACT_APP_GOOGLE_CLIENT_ID=your-actual-client-id-here.apps.googleusercontent.com
+     ```
+
+5. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+### Security Note
+
+**Never commit your `.env` file to version control.** The `.env.example` file contains placeholder values for reference. Keep your actual credentials private.
