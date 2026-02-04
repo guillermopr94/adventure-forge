@@ -7,6 +7,7 @@ import { useLanguage, useTranslation } from "../../common/language/LanguageConte
 import { useNavigation } from "../../common/contexts/NavigationContext";
 import "./Game.css";
 import TextNarrator from "../../common/components/TextNarrator/TextNarrator";
+import TypewriterText from "../../common/components/TypewriterText/TypewriterText";
 import { FiSave } from 'react-icons/fi';
 import BackgroundMusic from "../../common/components/BackgroundMusic/BackgroundMusic";
 import { useAuth } from "../../common/contexts/AuthContext";
@@ -465,7 +466,15 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
           <img src={currentImage} alt="Scene" className="game-scene-image" />
         )}
         <div className={`cinematic-text-overlay ${overlayVisible ? 'visible' : ''}`}>
-          <p>{currentSentence}</p>
+          <p>
+            <TypewriterText 
+              text={currentSentence} 
+              speed={30}
+              onComplete={() => {
+                // Typewriter finished, audio continues
+              }}
+            />
+          </p>
           <div className="click-hint">{t('click_to_advance') || "Click to advance ▶"}</div>
         </div>
       </div>
