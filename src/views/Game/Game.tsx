@@ -12,6 +12,7 @@ import BackgroundMusic from "../../common/components/BackgroundMusic/BackgroundM
 import { useAuth } from "../../common/contexts/AuthContext";
 import { GameService } from "../../common/services/GameService";
 import toast, { Toaster } from 'react-hot-toast';
+import { withRetry } from "../../common/utils/resilience";
 
 import { getAdventureType, AdventureGenre } from "../../common/resources/availableTypes";
 import { AudioGenerator } from "../../common/services/ai/AudioGenerator";
@@ -116,16 +117,20 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             headers['Authorization'] = `Bearer ${authToken}`;
           }
 
-          const response = await fetch(`${config.apiUrl}/ai/audio`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ text, voice: selectedVoice?.name || 'alloy', genre: genreKey, lang: language })
-          });
-          if (!response.ok) throw new Error("Backend Audio Failed");
+          const response = await withRetry(async () => {
+            const res = await fetch(`${config.apiUrl}/ai/audio`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ text, voice: selectedVoice?.name || 'alloy', genre: genreKey, lang: language })
+            });
+            if (!res.ok) throw new Error("Backend Audio Failed");
+            return res;
+          }, { retries: 2, baseDelay: 500, name: 'Audio Generation' });
+
           const data = await response.json();
           return data.audio;
         } catch (e) {
-          console.warn("Backend Audio Error:", e);
+          console.warn("Backend Audio Error after retries:", e);
           return null;
         }
       },

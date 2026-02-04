@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { config } from '../config/config';
+import { withRetry } from '../utils/resilience';
 
 export interface StreamEvent {
     type: 'status' | 'text_structure' | 'image' | 'audio' | 'done' | 'error' | 'image_error';
@@ -51,14 +52,18 @@ export const useGameStream = (
                 headers['Authorization'] = `Bearer ${authToken}`;
             }
 
-            const response = await fetch(`${config.apiUrl}/game/stream`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ prompt, history, voice, genre, lang })
-            });
+            const response = await withRetry(async () => {
+                const res = await fetch(`${config.apiUrl}/game/stream`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ prompt, history, voice, genre, lang })
+                });
+                if (!res.ok) throw new Error(`Stream connection failed: ${res.status}`);
+                return res;
+            }, { retries: 3, baseDelay: 1000, name: 'Stream Connection' });
 
-            if (!response.ok || !response.body) {
-                throw new Error(`Stream connection failed: ${response.status}`);
+            if (!response.body) {
+                throw new Error("Stream body is missing");
             }
 
             const reader = response.body.getReader();
