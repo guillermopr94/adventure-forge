@@ -129,3 +129,24 @@
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
 - Optimize assets and cleanup hook dependencies (#7).
 - Resilience: Exponential Retry logic for API calls (#20).
+
+## [2026-02-04 14:00] AEP Turn - Environment Security & Documentation
+**Issue:** #19 - [SECURITY] Secrets exposed in .env file
+**Status:** ✅ Completed
+
+### Technical Actions
+1. **Security Validation:**
+   - Verified `.env` is in `.gitignore` (already present).
+   - Confirmed `.env` was never committed to git history (`git log --all --full-history -- .env` returned empty).
+2. **Developer Experience Enhancement:**
+   - Created `.env.example` with placeholder values for `REACT_APP_GOOGLE_CLIENT_ID`.
+   - Added comprehensive "Local Development Setup" section to `README.md` with step-by-step OAuth configuration instructions.
+
+### Verification
+- Git history audit: SUCCESS (no .env in history).
+- Documentation review: Clear setup instructions for new developers.
+- PR #24 created and ready for merge.
+
+### Next Steps
+- Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
+- AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
