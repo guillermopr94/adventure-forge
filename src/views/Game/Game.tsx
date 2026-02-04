@@ -221,7 +221,16 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
       genreKey,
       language,
       (event) => {
-        if (event.type === 'text_structure') {
+        if (event.type === 'status') {
+          if (event.message) {
+            toast(event.message, { 
+              icon: event.message.includes('Retrying') ? '🔄' : '⌛',
+              id: 'game-status',
+              duration: 2000 
+            });
+          }
+        }
+        else if (event.type === 'text_structure') {
           if (event.paragraphs) {
             const newSegments = event.paragraphs.map(p => ({ text: p, image: undefined }));
             setCinematicSegments(newSegments);
@@ -359,7 +368,16 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
       genreKey,
       language,
       (event) => {
-        if (event.type === 'text_structure') {
+        if (event.type === 'status') {
+          if (event.message) {
+            toast(event.message, { 
+              icon: event.message.includes('Retrying') ? '🔄' : '⌛',
+              id: 'game-status',
+              duration: 2000 
+            });
+          }
+        }
+        else if (event.type === 'text_structure') {
           if (event.paragraphs) {
             const newSegments = event.paragraphs.map(p => ({ text: p, image: undefined }));
             setCinematicSegments(newSegments);

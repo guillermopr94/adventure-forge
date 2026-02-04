@@ -1,5 +1,20 @@
 # Logbook - Adventure Forge
 
+## [2026-02-04] AEP Turn - Fix Typewriter Overlay
+**Issue:** #26 - [BUG] Typewriter effect missing from Game.tsx overlay
+**Status:** ✅ Completed
+**PR:** https://github.com/guillermopr94/adventure-forge/pull/29
+
+### Technical Actions
+1. **Integration:**
+   - Imported `Typewriter` component in `Game.tsx`.
+   - Replaced static `<p>` tag in `cinematic-text-overlay` with `<Typewriter />`.
+   - Configured dynamic duration based on sentence length (`chars * 40ms`).
+2. **Refinement:**
+   - Enabled `isActive` prop linked to `overlayVisible` state to trigger animation.
+3. **Verification:**
+   - `npm run build`: SUCCESS ✅.
+
 ## [2026-02-03] AEP Turn - Restore Dev & Cinematic Style
 **Issue:** #2 - Dev Audit: Game Functionality & Cinematic Style Completion
 **Status:** ✅ Completed
