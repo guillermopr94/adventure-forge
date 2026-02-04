@@ -23,7 +23,7 @@
 - Implement robust retry system for AI calls (#3).
 - Migrate to Gemini Tool Calling for game state (#1).
 
-## [2026-02-04] AEP Turn - Structured Game State
+## [2026-02-04 01:30] AEP Turn - Structured Game State
 **Issue:** #1 - Structured Game State via Gemini Tool Calling
 **Status:** ✅ Completed
 
@@ -43,4 +43,26 @@
 ### Next Steps
 - Implement frontend UI components to display `inventory_changes` and `stats_update` (#1 - Frontend).
 - Optimize assets and cleanup hook dependencies (#7).
+- Implement Authentication Guard and Resource Ownership (#6).
+
+## [2026-02-04 09:15] AEP Turn - Core Game Logic & Cinematic Engine Fixes
+**Issues:** #9, #10, #11
+**Status:** ✅ Completed
+
+### Technical Actions
+1. **Fix Game History Persistence (#9):**
+   - Modified `Game.tsx` to stop filtering out model messages from history.
+   - Implemented proper history update logic: replaces the last model message if updating a stream, or appends if new.
+2. **Double Advancement Guard (#10):**
+   - Added `isAdvancingRef` to `Game.tsx` to prevent concurrent `advanceSentence` calls (e.g., click + audio end).
+3. **Visual Sync Stale State Fix (#11):**
+   - Introduced `cinematicSegmentsRef` to ensure `advanceCinematicSegment` always reads the most recent segments when waiting for AI-generated images.
+   - Added proper retry logic and 20s timeout for image sync.
+
+### Verification
+- `npm run build`: SUCCESS.
+- Code Review: Verified ref-based state management and history append logic.
+
+### Next Steps
+- Implement robust retry system for AI calls (#3).
 - Implement Authentication Guard and Resource Ownership (#6).

@@ -62,6 +62,12 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
   // Theme & Audio Config
   const audioFile = getAdventureType(genreKey).music;
 
+  // AI Infrastructure Refs
+  const cinematicSegmentsRef = useRef<{ text: string; image?: string }[]>([]);
+  useEffect(() => { cinematicSegmentsRef.current = cinematicSegments; }, [cinematicSegments]);
+
+  const isAdvancingRef = useRef(false);
+
   // --- Voice Handling ---
   const updateVoices = () => {
     const availableVoices = window.speechSynthesis.getVoices();
@@ -128,16 +134,22 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   // Forward Declaration for useSmartAudio
   const advanceSentence = async () => {
-    setOverlayVisible(false);
-    await new Promise(r => setTimeout(r, 600)); // Fade delay
+    if (isAdvancingRef.current) return;
+    isAdvancingRef.current = true;
 
-    const nextIdx = currentSentenceIndex + 1;
-    if (nextIdx < sentences.length) {
-      setCurrentSentenceIndex(nextIdx);
-      // Check if this sentence needs to wait (sync)? handled by prepareText cache check
-      playSentence(sentences[nextIdx], nextIdx);
-    } else {
-      advanceCinematicSegment();
+    try {
+      setOverlayVisible(false);
+      await new Promise(r => setTimeout(r, 600)); // Fade delay
+
+      const nextIdx = currentSentenceIndex + 1;
+      if (nextIdx < sentences.length) {
+        setCurrentSentenceIndex(nextIdx);
+        playSentence(sentences[nextIdx], nextIdx);
+      } else {
+        await advanceCinematicSegment();
+      }
+    } finally {
+      isAdvancingRef.current = false;
     }
   };
 
@@ -226,7 +238,13 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
             // Update history
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
-            setGameHistory(prev => [...prev.filter(h => h.role !== 'model'), { role: 'model', parts: [{ text: fullText }] }]);
+            setGameHistory(prev => {
+              const last = prev[prev.length - 1];
+              if (last && last.role === 'model') {
+                return [...prev.slice(0, -1), { role: 'model', parts: [{ text: fullText }] }];
+              }
+              return [...prev, { role: 'model', parts: [{ text: fullText }] }];
+            });
           }
         }
         else if (event.type === 'image') {
@@ -279,18 +297,12 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
 
   const advanceCinematicSegment = async () => {
     const nextIndex = currentSegmentIndex + 1;
-    if (nextIndex < cinematicSegments.length) {
+    if (nextIndex < cinematicSegmentsRef.current.length) {
       // Wait for next image to be ready (Visual Sync)
-      let nextSegment = cinematicSegments[nextIndex];
       let retries = 0;
-      while (!nextSegment.image && retries < 40) { // 20s timeout
+      while (!cinematicSegmentsRef.current[nextIndex]?.image && retries < 40) { // 20s timeout
         await new Promise(r => setTimeout(r, 500));
-        // We must read state... but state in while loop is stale.
-        // Actually, we can just return and let useEffect re-trigger?
-        // No, advanceCinematicSegment is called by Audio End.
-        // We should block here or set index and let useEffect block.
-        // We'll set index. The useEffect handles the wait.
-        break;
+        retries++;
       }
       setCurrentSegmentIndex(nextIndex);
     } else {
@@ -373,7 +385,13 @@ const Game: React.FC<GameProps> = ({ userToken, openaiKey, gameType, genreKey })
             setCurrentSegmentIndex(0);
             if (event.options) updateOptionButtons(event.options);
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
-            setGameHistory(prev => [...prev.filter(h => h.role !== 'model'), { role: 'model', parts: [{ text: fullText }] }]);
+            setGameHistory(prev => {
+              const last = prev[prev.length - 1];
+              if (last && last.role === 'model') {
+                return [...prev.slice(0, -1), { role: 'model', parts: [{ text: fullText }] }];
+              }
+              return [...prev, { role: 'model', parts: [{ text: fullText }] }];
+            });
           }
         }
         else if (event.type === 'image') {
