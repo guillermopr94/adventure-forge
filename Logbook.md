@@ -93,28 +93,24 @@
 
 ### Next Steps
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
-- AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
-- Assets optimization (#7).
+- Optimize assets and cleanup hook dependencies (#7).
 
-## [2026-02-04] IUQA Turn - Story Generation Flow Audit
-**Protocol:** Intensive UX & QA Audit (IUQA)
-**Status:** ✅ Audit Completed & Critical Bugs Fixed
+## [2026-02-04] AEP Turn - Robust Voice Initialization
+**Issue:** #12 - [UX] Game initialization hangs if voices fail to load
+**Status:** ✅ Completed
 
-### Identified Issues
-1. **[CRITICAL BUG] History Wipe:** `Game.tsx` was removing all model messages from history every turn, causing AI to lose context.
-2. **[CRITICAL BUG] Narrator Dead:** `TextNarrator` was conditioned on `actualContent` which was never set, effectively disabling audio narration.
-3. **[UX BUG] Double Advance:** Sentences were being advanced twice due to redundant callback triggers in `Game.tsx` and `useSmartAudio`.
-4. **[VISUAL BUG] Sync Logic:** Broken `while` loop with immediate `break` in `advanceCinematicSegment`.
-
-### Technical Fixes
-- **History Preservation:** Refactored `setGameHistory` to correctly update/append model responses while preserving past turns.
-- **Narrator Restoration:** Replaced `actualContent` with `currentSentence` in `Game.tsx` and removed redundant `advanceSentence()` calls.
-- **Cleanup:** Simplified `advanceCinematicSegment` by removing the non-functional and redundant wait loop (handled by `useEffect`).
+### Technical Actions
+1. **Frontend Resilience (Game.tsx):**
+   - Added `console.log` tracking for `speechSynthesis` events to improve remote debugging.
+   - Refactored `updateVoices` to handle empty voice arrays gracefully.
+   - Enhanced the safety timeout (2s) to force `setVoicesLoaded(true)` even if the `voiceschanged` event never fires or returns no voices (common on mobile browsers/Android WebView).
+   - This ensures the game always proceeds to `startGame()` instead of hanging on a loading state.
 
 ### Verification
-- **Issue Tracking:** Issues #9, #10, #11, #12 created in `guillermopr94/adventure-forge`.
-- **Code Audit:** Verified that `TextNarrator` now receives the correct content and history is maintained for long-turn story generation.
+- **Frontend Build:** SUCCESS (Verified production build via `react-scripts build`).
+- **Logic Check:** Verified that `setVoicesLoaded(true)` is guaranteed by the timeout, unblocking `initializeGame()`.
 
 ### Next Steps
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
-- Robust Voice Loading check (#12).
+- Optimize assets and cleanup hook dependencies (#7).
+- Resilience: Exponential Retry logic for API calls (#20).
