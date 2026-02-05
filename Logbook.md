@@ -1,5 +1,24 @@
 # Logbook - Adventure Forge
 
+## [2026-02-04 18:43] AEP Turn - AI Resilience & Model Fallback
+**Issue:** #3 - AI Infrastructure: Model Fallback & Exponential Retry
+**Status:** ✅ Completed
+**PRs:** 
+- Backend: https://github.com/guillermopr94/adventure-forge-api/pull/13
+- Frontend: https://github.com/guillermopr94/adventure-forge/pull/30
+
+### Technical Actions
+1. **Resilience Infrastructure (Backend):**
+   - Implemented `withRetry` utility in `AiService` with exponential backoff (min 3 retries) and error status detection (429, 500+).
+   - Added model fallback strategy to `generateGameTurn`: Gemini 2.5 -> Gemini Flash -> Gemini 2.0 -> Gemini Pro -> Puter (Claude/GPT) -> Pollinations.
+   - Enhanced `GameService` to emit real-time retry status events via Server-Sent Events (SSE).
+2. **User Experience (Frontend):**
+   - Updated `useGameStream` and `Game.tsx` to handle `status` events from the backend.
+   - Integrated `react-hot-toast` to notify users of background retries/fallbacks, ensuring transparency without interrupting the flow.
+3. **Verification:**
+   - Backend `npm run build`: SUCCESS ✅.
+   - Frontend `npm run build`: SUCCESS ✅.
+
 ## [2026-02-04] AEP Turn - Fix Typewriter Overlay
 **Issue:** #26 - [BUG] Typewriter effect missing from Game.tsx overlay
 **Status:** ✅ Completed
