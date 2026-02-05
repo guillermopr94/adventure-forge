@@ -7,7 +7,6 @@ import { useLanguage, useTranslation } from "../../common/language/LanguageConte
 import { useNavigation } from "../../common/contexts/NavigationContext";
 import "./Game.css";
 import TextNarrator from "../../common/components/TextNarrator/TextNarrator";
-import TypewriterText from "../../common/components/TypewriterText/TypewriterText";
 import { FiSave } from 'react-icons/fi';
 import BackgroundMusic from "../../common/components/BackgroundMusic/BackgroundMusic";
 import { useAuth } from "../../common/contexts/AuthContext";
@@ -17,6 +16,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { getAdventureType, AdventureGenre } from "../../common/resources/availableTypes";
 import { AudioGenerator } from "../../common/services/ai/AudioGenerator";
 import { useTheme } from "../../common/theme/ThemeContext";
+import Typewriter from "./components/Typewriter";
 
 interface GameProps {
   userToken: string; // Gemini API Key
@@ -467,12 +467,10 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
         )}
         <div className={`cinematic-text-overlay ${overlayVisible ? 'visible' : ''}`}>
           <p>
-            <TypewriterText 
+            <Typewriter 
               text={currentSentence} 
-              speed={30}
-              onComplete={() => {
-                // Typewriter finished, audio continues
-              }}
+              isActive={overlayVisible} 
+              duration={currentSentence.length * 40}
             />
           </p>
           <div className="click-hint">{t('click_to_advance') || "Click to advance ▶"}</div>
