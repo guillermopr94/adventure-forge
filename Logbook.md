@@ -187,3 +187,30 @@
 ### Next Steps
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
 - AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
+
+## [2026-02-04 16:35] AEP Turn - Typewriter Effect for Cinematic Overlay
+**Issue:** #2 - Dev Environment Restoration & Cinematic Engine Foundation (AC4)
+**Status:** ✅ AC4 Completed
+
+### Technical Actions
+1. **TypewriterText Component:**
+   - Created `src/common/components/TypewriterText/TypewriterText.tsx` with:
+     - Configurable speed (characters per second).
+     - Character-by-character text reveal via `useState` + `setTimeout`.
+     - `onComplete` callback for sync with audio/game flow.
+2. **Integration:**
+   - Updated `Game.tsx` to import and use `TypewriterText` in the cinematic text overlay.
+   - Text now reveals progressively instead of rendering instantly.
+
+### Verification
+- `npm run build`: ✅ SUCCESS.
+- Bundle Impact: +179B gzipped (0.2% increase - minimal).
+- Visual: Character-by-character reveal synchronized with overlay fade-in.
+
+### PR
+- **PR #25:** [Issue #2] Typewriter Effect for Narrative Text
+- **URL:** https://github.com/guillermopr94/adventure-forge/pull/25
+
+### Next Steps
+- Complete AC1+AC5 validation (environment start & gameplay loop testing).
+- AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).

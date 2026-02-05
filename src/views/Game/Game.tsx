@@ -303,10 +303,10 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     const currentSegment = cinematicSegments[currentSegmentIndex];
     if (currentSegment) {
       const text = currentSegment.text;
-      
+
       if (!currentSegment.image) {
-          setOverlayVisible(false);
-          return; 
+        setOverlayVisible(false);
+        return;
       }
 
       if (lastProcessedTextRef.current !== text || (!currentImage && currentSegment.image)) {
@@ -447,15 +447,18 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
           audioData={audioData}
           isLoadingAudio={isLoadingAudio}
           onComplete={() => {
-            onAudioComplete();
+            // Auto-advance disabled for manual control
+            // onAudioComplete(); 
           }}
         />
       )}
 
-      <div 
-        className="game-image-container fade-in" 
+      <div
+        className="game-image-container fade-in"
         onClick={() => {
-          if (!isProcessing && !areOptionsVisible) {
+          // Manual Advance Logic: 
+          // 1. If overlay is visible (text shown), verify interaction is allowed
+          if (overlayVisible && !isProcessing && !areOptionsVisible) {
             advanceSentence();
           }
         }}
@@ -472,7 +475,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
               duration={currentSentence.length * 40}
             />
           </p>
-          <div className="click-hint">{t('click_to_advance') || "Click to advance"}</div>
+          <div className="click-hint">{t('click_to_advance') || "Click to advance ▶"}</div>
         </div>
       </div>
 

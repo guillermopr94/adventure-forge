@@ -204,7 +204,6 @@ button:disabled {
   width: 100%;
   height: auto;
   display: block;
-  max-height: 400px;
   object-fit: cover;
   max-width: 100%;
 }
@@ -278,9 +277,17 @@ button:disabled {
 }
 
 @keyframes pulse {
-  0% { opacity: 0.3; }
-  50% { opacity: 0.7; }
-  100% { opacity: 0.3; }
+  0% {
+    opacity: 0.3;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+
+  100% {
+    opacity: 0.3;
+  }
 }
 
 /* Fade Text Animation */
