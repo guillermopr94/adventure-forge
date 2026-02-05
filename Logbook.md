@@ -1,3 +1,38 @@
+## [2026-02-05 17:51] AEP Turn - Quota Monitoring & Enhanced Notifications
+**Issue:** #3 - AI Infrastructure: Model Fallback & Exponential Retry (P1)
+**Status:** ✅ Completed
+**PR:** https://github.com/guillermopr94/adventure-forge-api/pull/14
+
+### Context
+Issue #3 required:
+- ✅ Retry with exponential backoff (already implemented)
+- ✅ Automatic model fallback (already implemented)
+- ❌ User-facing retry/fallback notifications (partially implemented via SSE)
+- ❌ Quota monitoring logs
+
+### Technical Actions
+1. **Quota Monitoring System:**
+   - Added in-memory `quotaLogs` array in `AiService` to track all AI operations.
+   - Created `logQuota()` method to log provider/model/action/status/error.
+   - Integrated quota logging into `withRetry` wrapper (automatic tracking).
+   - Added development console logs with emoji indicators (✅ success, ❌ error).
+   
+2. **Monitoring Endpoint:**
+   - Created `GET /ai/quota-stats` endpoint in `AiController`.
+   - Returns aggregated stats: total calls, success rate, errors, by-provider breakdown (last 24h).
+   
+3. **Enhanced Retry/Fallback Tracking:**
+   - Extended `withRetry` options to include `provider`, `model`, `action` metadata.
+   - Updated `generateGameTurn` and `generateText` to pass metadata.
+
+### Verification
+- Backend Build: SUCCESS ✅
+- Test script created: `test-quota-stats.js` (requires local server)
+
+### Notes
+- User-facing notifications already implemented via `onRetry`/`onFallback` callbacks (SSE events in `GameService.streamTurn`).
+- Quota logs kept in-memory (last 100 entries) for lightweight monitoring without DB dependency.
+
 ## [2026-02-05 16:45] AEP Turn - AI Resilience & Prompt Optimization
 **Issues:** #3 (Backend/Frontend), #27
 **Status:** ✅ Completed
