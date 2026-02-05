@@ -16,6 +16,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { getAdventureType, AdventureGenre } from "../../common/resources/availableTypes";
 import { AudioGenerator } from "../../common/services/ai/AudioGenerator";
 import { useTheme } from "../../common/theme/ThemeContext";
+import Typewriter from "./components/Typewriter";
 
 interface GameProps {
   userToken: string; // Gemini API Key
@@ -480,7 +481,13 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
           <img src={currentImage} alt="Scene" className="game-scene-image" />
         )}
         <div className={`cinematic-text-overlay ${overlayVisible ? 'visible' : ''}`}>
-          <p>{currentSentence}</p>
+          <p>
+            <Typewriter 
+              text={currentSentence} 
+              isActive={overlayVisible} 
+              duration={currentSentence.length * 40}
+            />
+          </p>
           <div className="click-hint">{t('click_to_advance') || "Click to advance"}</div>
         </div>
       </div>
