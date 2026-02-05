@@ -22,10 +22,25 @@
 - Backend `npm run build`: SUCCESS ✅.
 - Frontend `npm run build`: SUCCESS ✅.
 
+## [2026-02-05 17:30] Infra Turn - Software Factory & Repo Hardening
+**Roles:** Functional Analyst (Cron), PR Manager (Cron)
+**Status:** ✅ Completed
+
+### Technical Actions
+1. **Software Factory Architecture:**
+   - **Functional Analyst:** Created `ANALYST_PROTOCOL.md` and configured a cron job to break down Spikes into technical tasks.
+   - **PR Manager:** Created `PR_MANAGER_PROTOCOL.md` and configured a cron job to auto-merge validated PRs.
+2. **CI/CD & DevOps:**
+   - **Playwright E2E:** Initialized Playwright and created a smoke test suite (`tests/e2e/smoke.spec.ts`).
+   - **Agent Toolbox:** Created `scripts/agent-toolbox.js` for one-command build/test/git workflows.
+   - **Code Map:** Automated generation of `CODE_MAP.md` (Páginas Amarillas) for FE and BE to guide agents.
+3. **Security:**
+   - Migrated `adventure-forge` repository to **PRIVATE** visibility.
+   - Deprecated and removed the `gh-pages` deployment branch (migration to Vercel in progress).
+
 ## [2026-02-04] AEP Turn - Fix Typewriter Overlay
 **Issue:** #26 - [BUG] Typewriter effect missing from Game.tsx overlay
 **Status:** ✅ Completed
-**PR:** https://github.com/guillermopr94/adventure-forge/pull/29
 
 ### Technical Actions
 1. **Integration:**
@@ -166,6 +181,29 @@
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
 - Optimize assets and cleanup hook dependencies (#7).
 - Resilience: Exponential Retry logic for API calls (#20).
+
+## [2026-02-04 13:50] AEP Turn - Resilience & Retry Logic
+**Issue:** #20 - [RESILIENCE] GameService lacks error handling & retry logic
+**Status:** ✅ Completed
+
+### Technical Actions
+1. **Utility Creation:**
+   - Created `src/common/utils/resilience.ts` containing a `withRetry` helper with exponential backoff.
+   - The helper handles transient errors (429, 5xx, timeouts, network issues) and skips non-retryable ones (400, 401, 403, 404).
+2. **Service Integration:**
+   - Refactored `src/common/services/GameService.ts` to use `withRetry` for all Axios calls (save, load, list, delete).
+3. **Hook & Component Integration:**
+   - Updated `src/common/hooks/useGameStream.ts` to retry the initial stream connection fetch.
+   - Enhanced `src/views/Game/Game.tsx` to retry backend audio generation requests via the `AudioGenerator` service.
+
+### Verification
+- **Frontend Build:** SUCCESS (Verified production build via `react-scripts build`).
+- **Logic Check:** Verified that each retryable operation will attempt up to 3 times (or 2 for non-critical) before failing, improving UX in spotty network conditions.
+
+### Next Steps
+- Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
+- Optimize assets and cleanup hook dependencies (#7).
+- UX: Image Loading Placeholder / Shimmer (#17).
 
 ## [2026-02-04 14:00] AEP Turn - Environment Security & Documentation
 **Issue:** #19 - [SECURITY] Secrets exposed in .env file
