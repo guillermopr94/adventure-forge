@@ -55,6 +55,8 @@
     ]
   },
   "devDependencies": {
+    "@playwright/experimental-ct-react": "^1.58.1",
+    "@playwright/test": "^1.58.1",
     "gh-pages": "^5.0.0"
   }
 }
