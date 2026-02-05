@@ -1,3 +1,24 @@
+## [2026-02-05 18:07] PR Manager - Merged #14 (Quota Monitoring)
+**PR:** https://github.com/guillermopr94/adventure-forge-api/pull/14
+**Status:** ✅ MERGED
+**Branch:** `feat/ai-resilience-notifications` → deleted
+
+### Technical Summary
+- **Quota Monitoring System:** In-memory logging of all AI operations (provider/model/action/status/error).
+- **Monitoring Endpoint:** GET `/ai/quota-stats` for 24h aggregated stats (total calls, success rate, errors by provider).
+- **Enhanced withRetry:** Automatic quota logging with metadata tracking.
+- **Development Logs:** Console logging with emoji indicators (✅/❌).
+
+### Merge Details
+- **Fast-forward merge:** `9c45d1c..7526adf`
+- **Files changed:** `ai.controller.ts` (+7 lines), `ai.service.ts` (+68 lines)
+- **Branch cleanup:** Remote branch deleted post-merge
+
+### Issue Closure
+Closes #3 (adventure-forge-api) - AI Infrastructure: Model Fallback & Exponential Retry (Quota monitoring component)
+
+---
+
 ## [2026-02-05 18:30] Infrastructure - Vercel Migration & Deployment Configuration
 **Status:** ✅ Configured (Pending Vercel Env Vars)
 **Commit:** `be7bbf3`
