@@ -1,3 +1,39 @@
+## [2026-02-05 18:30] Infrastructure - Vercel Migration & Deployment Configuration
+**Status:** ✅ Configured (Pending Vercel Env Vars)
+**Commit:** `be7bbf3`
+
+### Context
+Migrating Adventure Forge frontend from GitHub Pages to Vercel to support private repository deployment.
+
+### Technical Actions
+1. **Vercel Configuration:**
+   - Created `vercel.json` with CRA-specific settings (output: `build/`, rewrite rules for SPA routing)
+   - Removed `homepage` field from `package.json` (was pointing to gh-pages, breaking Vercel builds)
+
+2. **Repository Hardening:**
+   - Changed repo visibility to PRIVATE (GitHub Pages no longer applicable)
+   - Deleted `gh-pages` branch (remote + local)
+   - Cleaned up 13 stale feature branches (merged PRs #22, #25, #30)
+
+3. **Build Configuration:**
+   - Framework: Create React App (react-scripts)
+   - Build command: `npm run build`
+   - Output directory: `build/`
+   - SPA rewrite: All routes → `/index.html`
+
+### Required Vercel Environment Variables
+**Must be configured in Vercel dashboard → Project Settings → Environment Variables:**
+- `REACT_APP_GOOGLE_CLIENT_ID` - Google OAuth Client ID (REQUIRED)
+- `REACT_APP_API_URL` - Backend API URL (OPTIONAL, defaults to `https://adventure-forge-api.onrender.com`)
+
+### Next Steps
+1. Configure environment variables in Vercel
+2. Trigger redeploy (will happen automatically after env vars are set)
+3. Verify OAuth flow works with new domain
+4. Update Google OAuth authorized redirect URIs with new Vercel domain
+
+---
+
 ## [2026-02-05 17:51] AEP Turn - Quota Monitoring & Enhanced Notifications
 **Issue:** #3 - AI Infrastructure: Model Fallback & Exponential Retry (P1)
 **Status:** ✅ Completed
