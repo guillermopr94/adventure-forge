@@ -101,7 +101,12 @@
 ### Verification
 - Backend `npm run build`: SUCCESS.
 - Frontend `npm run build`: SUCCESS.
-- Security: All sensitive routes (`/game/*`, `/ai/*`) now require a valid Google Token.
+- Security: All sensitive routes (`/game/*`, `/ai/*`) now require a valid Google Token. Resource ownership is enforced by using the token's subject as `userId`.
+
+### Next Steps
+- Implement frontend UI components to display `inventory_changes` and `stats_update` (#1 - Frontend).
+- Optimize assets and cleanup hook dependencies (#7).
+- AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
 
 ## [2026-02-04] IUQA Turn - Story Generation Flow Audit
 **Protocol:** Intensive UX & QA Audit (IUQA)
@@ -118,26 +123,49 @@
 - **Narrator Restoration:** Replaced `actualContent` with `currentSentence`.
 - **Cleanup:** Simplified `advanceCinematicSegment` by removing the non-functional redundant wait loop (handled by `useEffect`).
 
-## [2026-02-04 09:15] AEP Turn - Core Game Logic & Cinematic Engine Fixes
-**Issues:** #9, #10, #11
+## [2026-02-04] AEP Turn - Core Story Flow & History Fixes
+**Issue:** #9 - [CRITICAL] Game History is wiped every turn | #10 - Double Advance | #11 - Visual Sync
 **Status:** ✅ Completed
 
 ### Technical Actions
-1. **Fix Game History Persistence (#9):**
-   - Modified `Game.tsx` to stop filtering out model messages from history.
-   - Implemented proper history update logic: replaces the last model message if updating a stream, or appends if new.
-2. **Double Advancement Guard (#10):**
-   - Added `isAdvancingRef` and `currentSentenceIndexRef` to `Game.tsx` to prevent concurrent `advanceSentence` calls.
-3. **Visual Sync Stale State Fix (#11):**
-   - Introduced `cinematicSegmentsRef` and `useEffect` based synchronization to ensure images are loaded before narration.
+1. **Backend History Fix (API):**
+   - Refactored `AiService.generateGeminiText` to use native Gemini `contents` array for history instead of manual string concatenation.
+   - Added duplication check to prevent the current prompt from appearing twice in the context window.
+   - Improved role mapping for both Gemini and Pollinations providers.
+2. **Frontend UX & Sync (Game.tsx):**
+   - **History Preservation:** Verified that `setGameHistory` uses functional updates and `prev.slice` to update model chunks without wiping history.
+   - **Double Advance Prevention (#10):** Introduced `isAdvancingRef` and `currentSentenceIndexRef` to lock transitions and prevent race conditions when clicking during an auto-advance.
+   - **Visual Sync (#11):** Refactored `useEffect` for cinematic segments to correctly wait for stream-updated images before initializing sentence playback.
+   - **Index Management:** Added explicit ref-based tracking for `currentSentenceIndex` to ensure state consistency across asynchronous timeouts.
 
 ### Verification
-- `npm run build`: SUCCESS.
-- Code Review: Verified ref-based state management and history append logic.
+- **Backend Build:** SUCCESS.
+- **Frontend Build:** SUCCESS (Verified locally via tsc).
+- **Issue Tracking:** Issues #9, #10, #11 addressed.
 
 ### Next Steps
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
-- AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
+- Optimize assets and cleanup hook dependencies (#7).
+
+## [2026-02-04] AEP Turn - Robust Voice Initialization
+**Issue:** #12 - [UX] Game initialization hangs if voices fail to load
+**Status:** ✅ Completed
+
+### Technical Actions
+1. **Frontend Resilience (Game.tsx):**
+   - Added `console.log` tracking for `speechSynthesis` events to improve remote debugging.
+   - Refactored `updateVoices` to handle empty voice arrays gracefully.
+   - Enhanced the safety timeout (2s) to force `setVoicesLoaded(true)` even if the `voiceschanged` event never fires or returns no voices (common on mobile browsers/Android WebView).
+   - This ensures the game always proceeds to `startGame()` instead of hanging on a loading state.
+
+### Verification
+- **Frontend Build:** SUCCESS (Verified production build via `react-scripts build`).
+- **Logic Check:** Verified that `setVoicesLoaded(true)` is guaranteed by the timeout, unblocking `initializeGame()`.
+
+### Next Steps
+- Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
+- Optimize assets and cleanup hook dependencies (#7).
+- Resilience: Exponential Retry logic for API calls (#20).
 
 ## [2026-02-04 14:00] AEP Turn - Environment Security & Documentation
 **Issue:** #19 - [SECURITY] Secrets exposed in .env file
