@@ -345,10 +345,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     setIsGameStarted(true);
     setGameHistory([]);
 
-    const introPrompt = `${t("intro_prompt", { gameType: gameType })} 
-     IMPORTANT: You must output exactly 3 distinct paragraphs describing the scene progressively. 
-     Separate each paragraph with the tag [PARAGRAPH]. 
-     After the 3 paragraphs, output the tag [OPTIONS] followed by 3 choices.`;
+    const introPrompt = `${t("intro_prompt", { gameType: gameType })}`;
 
     const currentHistory = [{ role: "user", parts: [{ text: introPrompt }] }];
     setGameHistory(currentHistory);
