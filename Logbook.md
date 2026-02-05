@@ -1,5 +1,39 @@
 # Logbook - Adventure Forge
 
+## [2026-02-04 18:43] AEP Turn - AI Resilience & Model Fallback
+**Issue:** #3 - AI Infrastructure: Model Fallback & Exponential Retry
+**Status:** ✅ Completed
+**PRs:** 
+- Backend: https://github.com/guillermopr94/adventure-forge-api/pull/13
+- Frontend: https://github.com/guillermopr94/adventure-forge/pull/30
+
+### Technical Actions
+1. **Resilience Infrastructure (Backend):**
+   - Implemented `withRetry` utility in `AiService` with exponential backoff (min 3 retries) and error status detection (429, 500+).
+   - Added model fallback strategy to `generateGameTurn`: Gemini 2.5 -> Gemini Flash -> Gemini 2.0 -> Gemini Pro -> Puter (Claude/GPT) -> Pollinations.
+   - Enhanced `GameService` to emit real-time retry status events via Server-Sent Events (SSE).
+2. **User Experience (Frontend):**
+   - Updated `useGameStream` and `Game.tsx` to handle `status` events from the backend.
+   - Integrated `react-hot-toast` to notify users of background retries/fallbacks, ensuring transparency without interrupting the flow.
+3. **Verification:**
+   - Backend `npm run build`: SUCCESS ✅.
+   - Frontend `npm run build`: SUCCESS ✅.
+
+## [2026-02-04] AEP Turn - Fix Typewriter Overlay
+**Issue:** #26 - [BUG] Typewriter effect missing from Game.tsx overlay
+**Status:** ✅ Completed
+**PR:** https://github.com/guillermopr94/adventure-forge/pull/29
+
+### Technical Actions
+1. **Integration:**
+   - Imported `Typewriter` component in `Game.tsx`.
+   - Replaced static `<p>` tag in `cinematic-text-overlay` with `<Typewriter />`.
+   - Configured dynamic duration based on sentence length (`chars * 40ms`).
+2. **Refinement:**
+   - Enabled `isActive` prop linked to `overlayVisible` state to trigger animation.
+3. **Verification:**
+   - `npm run build`: SUCCESS ✅.
+
 ## [2026-02-03] AEP Turn - Restore Dev & Cinematic Style
 **Issue:** #2 - Dev Audit: Game Functionality & Cinematic Style Completion
 **Status:** ✅ Completed
@@ -102,20 +136,7 @@
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
 - AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
 
-## [2026-02-04 17:00] IUQA Turn - Intensive UX & QA Audit
-**Protocol:** Intensive UX & QA Audit (IUQA)
-**Flow:** Story Generation & Navigation
-**Status:** ✅ Audit Completed - 3 New Issues Created
-
-### Findings & Issues
-1. **[BUG] Typewriter Regression (#26):** The typewriter effect is implemented as a component but not integrated into `Game.tsx`.
-2. **[UX] Token Waste (#27):** Legacy tagging instructions (`[PARAGRAPH]`) are still sent to the AI despite the backend's migration to JSON mode.
-3. **[A11Y] Missing ARIA Labels (#28):** Icon buttons in selection and game screens lack labels.
-
-### Actions Taken
-- Created GitHub Issues #26, #27, #28.
-- Verified path to `Typewriter.tsx` for incoming fix.
-
+## [2026-02-04 14:00] AEP Turn - Environment Security & Documentation
 **Issue:** #19 - [SECURITY] Secrets exposed in .env file
 **Status:** ✅ Completed
 
@@ -135,33 +156,3 @@
 ### Next Steps
 - Implement frontend UI components for `inventory_changes` and `stats_update` (#1 - Frontend).
 - AI Infrastructure: Model Fallback & Exponential Retry improvements (#3).
-
-## [2026-02-04 17:15] AEP Turn - AI Generation Resilience & Puter Integration
-**Issue:** #10 (Backend) - [STABILITY] Image Generation Resilience & Fallback Extension
-**Status:** ✅ Completed (PR #12 Merged)
-
-### Technical Actions
-1. **Puter AI Integration (Chat & Images):**
-   - Implemented `generatePuterText` and `generatePuterImage` using Puter's REST drivers API (`api.puter.com/drivers/call`).
-   - Integrated Puter as a high-reliability fallback in `generateText`, `generateGameTurn`, and `generateImage`.
-   - Supported models: `claude-sonnet-4`, `gpt-4o` for text; `gpt-image-1-mini` for images.
-   - Added `PUTER_TOKEN` requirement to `.env.example`.
-2. **Image Generation Stabilization:**
-   - Expanded image fallback strategy to 6 levels: Gemini → Puter → Pollinations (Flux) → Turbo → SDXL → Legacy.
-   - Enhanced retry logic with exponential backoff specifically for 429 errors.
-3. **Deployment Process:**
-   - Created **PR #12** in `adventure-forge-api` explaining the changes.
-   - Merged PR #12 into `main` to trigger Render deployment.
-4. **Backlog Management:**
-   - Created Issue **#11** (Backend) for request queueing.
-   - Updated Issue **#10** with completion status for Puter.
-
-### Verification
-- `npm run build`: SUCCESS (Backend).
-- Strategy Audit: Verified cascading fallbacks for all AI modalities.
-- Code Review: Verified REST payload structure against Puter.js driver protocol.
-- PR Workflow: SUCCESS (Created and Merged).
-
-### Next Steps
-- Implement request queueing to prevent 429 errors (#11).
-- Monitor production for PUTER_TOKEN implementation by user.
