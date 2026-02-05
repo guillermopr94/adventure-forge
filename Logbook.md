@@ -1,23 +1,26 @@
-# Logbook - Adventure Forge
-
-## [2026-02-04 18:43] AEP Turn - AI Resilience & Model Fallback
-**Issue:** #3 - AI Infrastructure: Model Fallback & Exponential Retry
+## [2026-02-05 16:45] AEP Turn - AI Resilience & Prompt Optimization
+**Issues:** #3 (Backend/Frontend), #27
 **Status:** ✅ Completed
-**PRs:** 
-- Backend: https://github.com/guillermopr94/adventure-forge-api/pull/13
-- Frontend: https://github.com/guillermopr94/adventure-forge/pull/30
+**PRs:**
+- Backend Resilience (Retry/Fallback): https://github.com/guillermopr94/adventure-forge-api/pull/13
+- Frontend Resilience (Notifications): https://github.com/guillermopr94/adventure-forge/pull/30
+- Prompt Optimization: https://github.com/guillermopr94/adventure-forge/pull/31
 
 ### Technical Actions
-1. **Resilience Infrastructure (Backend):**
+1. **AI Resilience (Backend):**
    - Implemented `withRetry` utility in `AiService` with exponential backoff (min 3 retries) and error status detection (429, 500+).
-   - Added model fallback strategy to `generateGameTurn`: Gemini 2.5 -> Gemini Flash -> Gemini 2.0 -> Gemini Pro -> Puter (Claude/GPT) -> Pollinations.
-   - Enhanced `GameService` to emit real-time retry status events via Server-Sent Events (SSE).
-2. **User Experience (Frontend):**
-   - Updated `useGameStream` and `Game.tsx` to handle `status` events from the backend.
-   - Integrated `react-hot-toast` to notify users of background retries/fallbacks, ensuring transparency without interrupting the flow.
-3. **Verification:**
-   - Backend `npm run build`: SUCCESS ✅.
-   - Frontend `npm run build`: SUCCESS ✅.
+   - Added `onFallback` callback to `withRetry` to notify the system when switching strategies.
+   - Refactored `generateGameTurn` to accept the `onFallback` callback and bubble it up to the stream.
+2. **AI Resilience (Frontend):**
+   - Updated `Game.tsx` to handle `status` events from the backend with `is_retry` and `is_fallback` flags.
+   - Integrated `react-hot-toast` to notify users of background retries/fallbacks.
+3. **Prompt Optimization (#27):**
+   - Removed legacy `[PARAGRAPH]` and `[OPTIONS]` tagging instructions from `startGame()` and `sendChoice()` in `Game.tsx`.
+   - Now relying exclusively on the backend's Structured JSON schema enforcement.
+
+### Verification
+- Backend `npm run build`: SUCCESS ✅.
+- Frontend `npm run build`: SUCCESS ✅.
 
 ## [2026-02-04] AEP Turn - Fix Typewriter Overlay
 **Issue:** #26 - [BUG] Typewriter effect missing from Game.tsx overlay
