@@ -69,8 +69,12 @@ jobs:
         working-directory: backend
         run: |
           echo "Starting backend from $(pwd)"
+          echo "Contents of dist/:"
           ls -la dist/
-          node dist/main.js > /tmp/backend.log 2>&1 &
+          echo "Contents of dist/src/:"
+          ls -la dist/src/ || echo "dist/src not found"
+          # NestJS compiles to dist/src/main.js
+          node dist/src/main.js > /tmp/backend.log 2>&1 &
           echo $! > /tmp/backend.pid
           echo "Backend started with PID $(cat /tmp/backend.pid)"
           sleep 2
