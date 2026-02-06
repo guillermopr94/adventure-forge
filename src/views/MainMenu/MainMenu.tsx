@@ -65,12 +65,12 @@ const MainMenu: React.FC = () => {
         <div className="main-menu fade-in">
             {/* Title is handled by parent or header */}
             <div className="menu-buttons">
-                <button className="menu-btn primary" onClick={startNewGame}>
+                <button className="menu-btn primary" onClick={startNewGame} data-testid="new-adventure-btn">
                     {t('new_adventure') || "New Adventure"}
                 </button>
 
                 {user && hasSave && (
-                    <button className="menu-btn secondary" onClick={() => setShowLoadModal(true)} disabled={isLoading}>
+                    <button className="menu-btn secondary" onClick={() => setShowLoadModal(true)} disabled={isLoading} data-testid="load-game-btn">
                         {isLoading ? "Loading..." : (t('continue_adventure') || "Load Game")}
                     </button>
                 )}

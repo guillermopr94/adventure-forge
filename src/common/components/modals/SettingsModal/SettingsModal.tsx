@@ -64,7 +64,7 @@ const SettingsModal: React.FC = () => {
             <div className="settings-modal glass-panel" style={modalStyle}>
                 <div className="settings-header" style={headerStyle}>
                     <h2 style={{ textShadow: '2px 2px 4px black', margin: 0 }}>{t('settings')}</h2>
-                    <button onClick={() => setShowSettings(false)} className="close-button">
+                    <button onClick={() => setShowSettings(false)} className="close-button" data-testid="settings-close-btn">
                         <IoClose size={24} />
                     </button>
                 </div>
@@ -120,6 +120,7 @@ const SettingsModal: React.FC = () => {
                                         onClick={() => setLanguage('en')}
                                         className="lang-btn"
                                         style={getLanguageButtonStyle('en')}
+                                        data-testid="lang-en"
                                     >
                                         🇺🇸 English
                                     </button>
@@ -127,6 +128,7 @@ const SettingsModal: React.FC = () => {
                                         onClick={() => setLanguage('es')}
                                         className="lang-btn"
                                         style={getLanguageButtonStyle('es')}
+                                        data-testid="lang-es"
                                     >
                                         🇪🇸 Español
                                     </button>
