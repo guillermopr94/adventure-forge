@@ -12,6 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout frontend
         uses: actions/checkout@v4
@@ -44,25 +55,30 @@ jobs:
 
       - name: Start backend in background
         run: |
-          node dist/main.js &
+          node dist/main.js > /tmp/backend.log 2>&1 &
           echo $! > /tmp/backend.pid
+          echo "Backend started with PID $(cat /tmp/backend.pid)"
         working-directory: backend
         env:
           PORT: 3001
+          MONGO_URI: mongodb://localhost:27017/adventure-forge-test
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           NODE_ENV: test
 
       - name: Wait for backend to be ready
         run: |
-          echo "Waiting for backend..."
+          echo "Waiting for backend on port 3001..."
           for i in {1..30}; do
             if curl -s http://localhost:3001/ > /dev/null 2>&1; then
               echo "Backend is up!"
               exit 0
             fi
-            echo "Attempt $i/30..."
+            echo "Attempt $i/30... (checking logs)"
+            tail -5 /tmp/backend.log 2>/dev/null || true
             sleep 2
           done
+          echo "=== FULL BACKEND LOGS ==="
+          cat /tmp/backend.log
           echo "Backend failed to start"
           exit 1
 
@@ -80,9 +96,17 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+      - name: Upload backend logs
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: backend-logs
+          path: /tmp/backend.log
+          retention-days: 3
+
       - name: Stop backend
         if: always()
         run: |
           if [ -f /tmp/backend.pid ]; then
-            kill $(cat /tmp/backend.pid) || true
+            kill $(cat /tmp/backend.pid) 2>/dev/null || true
           fi
