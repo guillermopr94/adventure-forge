@@ -23,10 +23,13 @@
 - [ ] Audio/TTS funciona consistentemente
 - [ ] No crashes en sesiones de juego de 30+ minutos
 - [ ] Cold starts < 5 segundos
+- [x] **Prompts endurecidos**: Las IAs reciben instrucciones claras y estrictas para devolver JSON puro
+- [x] **Parseo robusto**: Limpieza de markdown, extracción regex fallback, normalización de estructuras
 
 **Current Issues:**
 - Image generation inestable (Pollinations rate limits)
 - ~~No fallback robusto~~ ✅ HuggingFace añadido
+- ~~Parseo frágil de respuestas AI~~ ✅ Parser endurecido + markdown cleanup
 
 ---
 
@@ -146,6 +149,9 @@
 | AI-004 | Provider health checks | P2 | ⏳ Pending |
 | AI-005 | Cost tracking per provider | P2 | ⏳ Pending |
 | AI-006 | Auto-switch to cheapest healthy provider | P3 | ⏳ Pending |
+| AI-007 | Hardened prompts & parsing for AI responses | P0 | ✅ Done |
+| AI-008 | Markdown artifact cleanup in narratives | P0 | ✅ Done |
+| AI-009 | Regex fallback extraction for malformed JSON | P1 | ✅ Done |
 
 ### EPIC 2: Mobile-First UI Overhaul
 **Goal:** PWA-quality mobile experience
