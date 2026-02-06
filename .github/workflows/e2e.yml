@@ -55,10 +55,11 @@ jobs:
 
       - name: Start backend in background
         run: |
+          cd backend
+          ls -la dist/ || echo "dist folder not found!"
           node dist/main.js > /tmp/backend.log 2>&1 &
           echo $! > /tmp/backend.pid
           echo "Backend started with PID $(cat /tmp/backend.pid)"
-        working-directory: backend
         env:
           PORT: 3001
           MONGO_URI: mongodb://localhost:27017/adventure-forge-test
