@@ -12,15 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    services:
-      backend:
-        image: node:20-alpine
-        options: >-
-          --health-cmd "wget -q --spider http://localhost:3001/health || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout frontend
         uses: actions/checkout@v4
@@ -51,21 +42,29 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Start backend
-        run: npm run start:prod &
+      - name: Start backend in background
+        run: |
+          node dist/main.js &
+          echo $! > /tmp/backend.pid
         working-directory: backend
         env:
           PORT: 3001
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           NODE_ENV: test
 
-      - name: Wait for backend
+      - name: Wait for backend to be ready
         run: |
+          echo "Waiting for backend..."
           for i in {1..30}; do
-            curl -s http://localhost:3001/ && break
-            echo "Waiting for backend... ($i/30)"
+            if curl -s http://localhost:3001/ > /dev/null 2>&1; then
+              echo "Backend is up!"
+              exit 0
+            fi
+            echo "Attempt $i/30..."
             sleep 2
           done
+          echo "Backend failed to start"
+          exit 1
 
       - name: Run E2E tests
         run: npx playwright test
@@ -80,3 +79,10 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f /tmp/backend.pid ]; then
+            kill $(cat /tmp/backend.pid) || true
+          fi
