@@ -37,29 +37,45 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install frontend dependencies
         run: npm ci
 
       - name: Install backend dependencies
-        run: npm ci
         working-directory: backend
+        run: npm ci
 
       - name: Build backend
-        run: npm run build
         working-directory: backend
+        run: |
+          echo "Building backend..."
+          npm run build
+          echo "Build complete. Checking dist folder:"
+          ls -la
+          ls -la dist/ || echo "ERROR: dist/ not found after build!"
+
+      - name: Verify backend build
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing backend folder:"
+          ls -la backend/
+          echo "Listing backend/dist:"
+          ls -la backend/dist/ || echo "backend/dist not found!"
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
       - name: Start backend in background
+        working-directory: backend
         run: |
-          cd backend
-          ls -la dist/ || echo "dist folder not found!"
+          echo "Starting backend from $(pwd)"
+          ls -la dist/
           node dist/main.js > /tmp/backend.log 2>&1 &
           echo $! > /tmp/backend.pid
           echo "Backend started with PID $(cat /tmp/backend.pid)"
+          sleep 2
+          echo "Initial backend logs:"
+          cat /tmp/backend.log || true
         env:
           PORT: 3001
           MONGO_URI: mongodb://localhost:27017/adventure-forge-test
@@ -74,8 +90,8 @@ jobs:
               echo "Backend is up!"
               exit 0
             fi
-            echo "Attempt $i/30... (checking logs)"
-            tail -5 /tmp/backend.log 2>/dev/null || true
+            echo "Attempt $i/30..."
+            tail -3 /tmp/backend.log 2>/dev/null || true
             sleep 2
           done
           echo "=== FULL BACKEND LOGS ==="
