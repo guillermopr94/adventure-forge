@@ -41,6 +41,13 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Build frontend
+        run: npm run build
+        env:
+          CI: false
+          REACT_APP_API_URL: http://localhost:3001
+          REACT_APP_GOOGLE_CLIENT_ID: test-client-id
+
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
@@ -64,6 +71,16 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      - name: Install serve for static frontend
+        run: npm install -g serve
+
+      - name: Start frontend in background
+        run: |
+          serve -s build -l 3000 > /tmp/frontend.log 2>&1 &
+          echo $! > /tmp/frontend.pid
+          sleep 2
+          echo "Frontend started with PID $(cat /tmp/frontend.pid)"
 
       - name: Start backend in background
         working-directory: backend
@@ -103,11 +120,26 @@ jobs:
           echo "Backend failed to start"
           exit 1
 
+      - name: Wait for frontend to be ready
+        run: |
+          echo "Waiting for frontend on port 3000..."
+          for i in {1..15}; do
+            if curl -s http://localhost:3000/ > /dev/null 2>&1; then
+              echo "Frontend is up!"
+              exit 0
+            fi
+            echo "Attempt $i/15..."
+            sleep 2
+          done
+          echo "=== FRONTEND LOGS ==="
+          cat /tmp/frontend.log
+          echo "Frontend failed to start"
+          exit 1
+
       - name: Run E2E tests
         run: npx playwright test
         env:
           CI: true
-          REACT_APP_API_URL: http://localhost:3001
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -130,4 +162,7 @@ jobs:
         run: |
           if [ -f /tmp/backend.pid ]; then
             kill $(cat /tmp/backend.pid) 2>/dev/null || true
+          fi
+          if [ -f /tmp/frontend.pid ]; then
+            kill $(cat /tmp/frontend.pid) 2>/dev/null || true
           fi
