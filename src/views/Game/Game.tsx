@@ -271,7 +271,8 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
           toast.error(`Stream Error: ${event.error}`);
           setIsProcessing(false);
         }
-      }
+      },
+      savedGameState?._id
     );
   }
 
@@ -403,7 +404,8 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
           toast.error(`Stream Error: ${event.error}`);
           setIsProcessing(false);
         }
-      }
+      },
+      savedGameState?._id
     );
   }
 
