@@ -56,7 +56,7 @@ const AdventureSelectionScreen: React.FC = () => {
                 </div>
 
                 <p className="selected-genre-description">{t(selectedGenre.id)}</p>
-                <button className="modern-button start-game-btn" onClick={startGame}>{t("play")}</button>
+                <button className="modern-button start-game-btn" onClick={startGame} data-testid="start-adventure-btn">{t("play")}</button>
             </div>
         </div>
     );
