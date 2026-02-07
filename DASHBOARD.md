@@ -1,6 +1,6 @@
 # 🎯 Adventure Forge - Sprint Dashboard
 
-**Last Updated:** 2026-02-07 14:00 CET  
+**Last Updated:** 2026-02-07 19:43 CET  
 **Phase:** MVP Foundation (Q1 2026)  
 **Sprint Theme:** "Rock-solid foundation + Mobile-first"
 
@@ -10,29 +10,17 @@
 
 | Priority | Frontend | Backend | Total |
 |----------|----------|---------|-------|
-| **P0** (Critical) | 1 | 1 | **2** |
+| **P0** (Critical) | 0 | 1 | **1** |
 | **P1** (High) | 5 | 14 | **19** |
 | **P2** (Medium) | 14 | 5 | **19** |
 | **Untagged** | 0 | 0 | **0** |
-| **TOTAL** | 20 | 20 | **40** |
+| **TOTAL** | 19 | 20 | **39** |
 
 ---
 
 ## 🚨 TOP 5 CRITICAL PRIORITIES
 
-### 1. [P0] [BUG] Narrative text hidden if segment image missing (FE #34)
-**Impact:** Game-breaking bug. Users lose narrative content.  
-**Acceptance Criteria:**
-- Text displays even if image generation fails
-- Graceful fallback to text-only mode
-- User is notified (not blocked)
-- "Next" button remains functional
-
-**Action:** START THIS NOW
-
----
-
-### 2. [P0] [SECURITY] Missing AuthGuard on /game/stream (BE #17)
+### 1. [P0] [SECURITY] Missing AuthGuard on /game/stream (BE #17)
 **Impact:** Unauthorized users can consume AI resources. Potential cost leak.  
 **Acceptance Criteria:**
 - JWT validation on `/game/stream` endpoint
@@ -43,7 +31,7 @@
 
 ---
 
-### 3. [P0] Backend AI Orchestration & Context Management (BE #1)
+### 2. [P0] Backend AI Orchestration & Context Management (BE #1)
 **Impact:** Story coherence and long-term session stability.  
 **Acceptance Criteria:**
 - NestJS service for prompt assembly with context (last 10 turns)
@@ -54,7 +42,7 @@
 
 ---
 
-### 4. [P1] [STABILITY] Implement Global ValidationPipe (BE #18)
+### 3. [P1] [STABILITY] Implement Global ValidationPipe (BE #18)
 **Impact:** Prevents malformed requests. Increases API resilience.  
 **Acceptance Criteria:**
 - `class-validator` + `class-transformer` configured in `main.ts`
@@ -65,7 +53,7 @@
 
 ---
 
-### 5. [P1] AI Infrastructure: Model Fallback & Exponential Retry (FE #3)
+### 4. [P1] AI Infrastructure: Model Fallback & Exponential Retry (FE #3)
 **Impact:** High availability of AI services. Supports "Stability First" objective.  
 **Status:** Partially implemented
 **Acceptance Criteria:**
@@ -74,6 +62,16 @@
 - Exponential backoff on retries
 
 **Action:** Complete resilience infrastructure
+
+---
+
+### 5. [P2] [RESILIENCE] Missing AbortController in useGameStream (FE #36)
+**Impact:** Prevents memory leaks and orphaned requests.
+**Acceptance Criteria:**
+- Stream aborted when component unmounts
+- Clean cleanup of SSE events
+
+**Action:** Stability improvement.
 
 ---
 
@@ -86,9 +84,10 @@ None identified. Critical issues have clear implementation paths.
 ## 📈 SPRINT PROGRESS (Current)
 
 **Sprint Goal:** Stability + Mobile UX foundation  
-**Burn Rate:** ~55% complete (12/22 estimated tasks)
+**Burn Rate:** ~65% complete (13/22 estimated tasks)
 
 ### Completed This Sprint:
+- ✅ **FE #34**: Narrative display resilience (PR #58)
 - ✅ BE #17, #30, #31, #32: Security hardening & stream auth (PR #39 BE, PR #50 FE)
 - ✅ AI-001: HuggingFace image fallback
 - ✅ CIN-001: Typewriter effect (PR #25)
@@ -98,7 +97,6 @@ None identified. Critical issues have clear implementation paths.
 - ✅ FE #9: Game history context loss fix
 
 ### In Progress:
-- ⏳ #34: Narrative text hidden bug (FE)
 - ⏳ #1: Backend context management (BE)
 
 ### Blocked/Stalled:
@@ -109,10 +107,11 @@ None.
 ## 🎯 NEXT ACTIONS
 
 ### For Autonomous Agents (AEP):
-1. **FE #34** - Fix narrative display bug (CRITICAL)
-2. **BE #17** - Add AuthGuard to streaming (CRITICAL)
-3. **BE #18** - Global ValidationPipe (QUICK WIN)
-4. **FE #32** - Remove duplicate deps (QUICK WIN)
+1. **BE #17** - Add AuthGuard to streaming (CRITICAL)
+2. **BE #18** - Global ValidationPipe (QUICK WIN)
+3. **FE #32** - Remove duplicate deps (QUICK WIN)
+4. **FE #3** - Complete circuit breaker logic
+5. **FE #36** - AbortController cleanup
 
 ### For Product Manager (SPSM):
 1. ✅ Backlog synced with GitHub (41 issues tracked)
@@ -125,13 +124,13 @@ None.
 
 | Epic | Done | In Progress | Pending | Total |
 |------|------|-------------|---------|-------|
-| **AI Infrastructure** | 5 | 2 | 2 | 9 |
-| **Mobile-First UI** | 1 | 1 | 5 | 7 |
-| **Cinematic Polish** | 1 | 0 | 5 | 6 |
+| **AI Infrastructure** | 6 | 1 | 2 | 9 |
+| **Mobile-First UI** | 2 | 1 | 4 | 7 |
+| **Cinematic Polish** | 2 | 0 | 4 | 6 |
 | **Token Economy** | 0 | 0 | 8 | 8 |
 | **Custom Genres** | 0 | 0 | 7 | 7 |
 
-**MVP Readiness:** 🟢 **70%** (AI Infrastructure hardening in progress, UI/UX foundation solid)
+**MVP Readiness:** 🟢 **75%** (AI Infrastructure hardening in progress, UI/UX foundation solid)
 
 ---
 
