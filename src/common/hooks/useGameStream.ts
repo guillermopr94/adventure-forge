@@ -34,7 +34,8 @@ export const useGameStream = (
         voice: string,
         genre: string,
         lang: string,
-        onEvent: (event: StreamEvent) => void
+        onEvent: (event: StreamEvent) => void,
+        saveId?: string
     ) => {
         setIsStreaming(true);
         setStreamError(null);
@@ -56,7 +57,7 @@ export const useGameStream = (
                 const res = await fetch(`${config.apiUrl}/game/stream`, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify({ prompt, history, voice, genre, lang })
+                    body: JSON.stringify({ prompt, history, voice, genre, lang, saveId })
                 });
                 if (!res.ok) throw new Error(`Stream connection failed: ${res.status}`);
                 return res;
