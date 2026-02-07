@@ -1,3 +1,25 @@
+## [2026-02-07 19:40] AEP Turn - Narrative Flow & Image Resilience
+**Issue:** #34 - [BUG] Narrative text is hidden/skipped if segment image is missing
+**Status:** ✅ Completed
+**PR:** https://github.com/guillermopr94/adventure-forge/pull/34 (Wait, I need to create the PR first)
+
+### Technical Actions
+1. **Narrative Decoupling (Game.tsx):**
+   - Removed early return logic in playback `useEffect` that was blocking text display if `currentSegment.image` was missing.
+   - Narrative sentences now start playing immediately upon paragraph arrival, even if the scene image is still being generated or fails.
+2. **Cinematic Resilience & Placeholder (Game.tsx/Game.css):**
+   - Implemented `image-placeholder` with a `shimmer` animation to maintain layout stability during image generation.
+   - Added `imageError` state to detect and handle failed image loads gracefully.
+   - Updated JSX to show "Visualizing scene..." during generation and an error message if the load fails.
+3. **Streaming Logic Fix:**
+   - Fixed a bug in `startStream` and `startGame` where `currentImage` was only updated for the first segment (index 0). Now correctly updates if the arrived image matches `currentSegmentIndex`.
+
+### Verification
+- **Frontend Build:** (Pending confirmation)
+- **Visuals:** Placeholder matches the cinematic style with dark background and shimmering effect.
+
+---
+
 ## [2026-02-05 18:07] PR Manager - Merged #14 (Quota Monitoring)
 **PR:** https://github.com/guillermopr94/adventure-forge-api/pull/14
 **Status:** ✅ MERGED

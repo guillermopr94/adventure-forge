@@ -46,6 +46,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
   const [cinematicSegments, setCinematicSegments] = useState<{ text: string; image?: string }[]>([]);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   // Text & Interaction State
   const [gameContent, setGameContent] = useState<string[]>([]);
@@ -259,7 +260,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             });
             const img = new Image();
             img.src = event.data;
-            if (event.index === 0) setCurrentImage(event.data);
+            if (event.index === currentSegmentIndex) setCurrentImage(event.data);
           }
         }
         else if (event.type === 'audio') {
@@ -308,15 +309,20 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     const currentSegment = cinematicSegments[currentSegmentIndex];
     if (currentSegment) {
       const text = currentSegment.text;
+      setImageError(false); // Reset error state for new segment
 
-      if (!currentSegment.image) {
-        setOverlayVisible(false);
-        return;
+      // Update current image if available, but don't block
+      if (currentSegment.image && currentImage !== currentSegment.image) {
+        setCurrentImage(currentSegment.image);
+      } else if (!currentSegment.image && currentImage) {
+        // Only clear currentImage if we explicitly have no image for this segment
+        // Wait, if it's still loading (undefined), we keep the old one or show spinner?
+        // Actually, if currentSegmentIndex changed, we should probably clear it if the new segment doesn't have it yet.
+        setCurrentImage(null);
       }
 
-      if (lastProcessedTextRef.current !== text || (!currentImage && currentSegment.image)) {
+      if (lastProcessedTextRef.current !== text) {
         lastProcessedTextRef.current = text;
-        setCurrentImage(currentSegment.image);
 
         const newSentences = splitIntoSentences(text);
         setSentences(newSentences);
@@ -393,7 +399,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             });
             const img = new Image();
             img.src = event.data;
-            if (event.index === 0) setCurrentImage(event.data);
+            if (event.index === currentSegmentIndex) setCurrentImage(event.data);
           }
         }
         else if (event.type === 'audio') {
@@ -470,8 +476,20 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
         }}
         style={{ cursor: (!isProcessing && !areOptionsVisible) ? 'pointer' : 'default' }}
       >
-        {currentImage && (
-          <img src={currentImage} alt="Scene" className="game-scene-image" />
+        {currentImage && !imageError ? (
+          <img 
+            src={currentImage} 
+            alt="Scene" 
+            className="game-scene-image" 
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="image-placeholder">
+             <div className="shimmer"></div>
+             <p className="placeholder-text">
+               {imageError ? (t('image_error') || "Image failed to load") : (t('visualizing_scene') || "Visualizing scene...")}
+             </p>
+          </div>
         )}
         <div className={`cinematic-text-overlay ${overlayVisible ? 'visible' : ''}`}>
           <p>
