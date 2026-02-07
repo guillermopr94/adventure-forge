@@ -1,3 +1,48 @@
+## [2026-02-07 07:51] AEP - PR #43 (Narrative Text Decoupling) ✅
+**PR:** https://github.com/guillermopr94/adventure-forge/pull/43  
+**Status:** 🔄 OPEN  
+**Branch:** `fix/fe-34-narrative-text-without-image`  
+**Issue:** Closes #34 [P0] - Narrative text hidden if image missing
+
+### Problem
+Game-breaking bug where narrative text was completely hidden when segment images failed to load or were delayed. Root cause: Early return in `useEffect` (line 343-347) prevented text rendering when `!currentSegment.image`.
+
+### Solution Implemented
+- ✅ **Decoupled text display from image loading:** Text ALWAYS renders, regardless of image status
+- ✅ **Fallback placeholder:** Animated shimmer effect (`<div className="image-placeholder">`) when image missing
+- ✅ **User notification:** Toast message ('🖼️ Image loading...') on first segment without image
+- ✅ **Accessibility:** Next button (click-to-advance) remains functional even without images
+
+### Technical Changes
+- **Game.tsx** (18.3 KB):
+  - Removed early return that blocked text rendering
+  - Added `isImageMissing` state to track image loading status
+  - Conditional rendering: `{isImageMissing && !currentImage && <div className="image-placeholder">...}</div>}`
+  - Reset `isImageMissing` when image loads successfully
+- **Game.css** (+59 lines):
+  - `.image-placeholder`: 450px height, dark gradient background
+  - `.shimmer-effect`: Animated highlight sweep (2s infinite)
+  - `.image-loading-text`: Pulsing emoji + text with fadeIn animation
+  - Responsive: 300px height on mobile (<480px)
+
+### Build Status
+- ✅ **SUCCESS** (75.89 kB main bundle, +0.1% size increase acceptable)
+- ⚠️ ESLint warnings: 11 total (no new warnings introduced)
+
+### Testing Checklist
+- ✅ Build passes without errors
+- ✅ Shimmer animation renders when `currentSegment.image === undefined`
+- ✅ Text overlay displays with typewriter effect regardless of image
+- ✅ Click-to-advance works even when placeholder is showing
+- ✅ Toast notification appears once per game session start
+
+### Next Steps
+- Await code review & merge
+- Update DASHBOARD.md post-merge
+- Mark #34 as CLOSED
+
+---
+
 ## [2026-02-05 18:07] PR Manager - Merged #14 (Quota Monitoring)
 **PR:** https://github.com/guillermopr94/adventure-forge-api/pull/14
 **Status:** ✅ MERGED
