@@ -1,6 +1,6 @@
 # 🎯 Adventure Forge - Sprint Dashboard
 
-**Last Updated:** 2026-02-07 19:43 CET  
+**Last Updated:** 2026-02-07 19:55 CET  
 **Phase:** MVP Foundation (Q1 2026)  
 **Sprint Theme:** "Rock-solid foundation + Mobile-first"
 
@@ -11,10 +11,10 @@
 | Priority | Frontend | Backend | Total |
 |----------|----------|---------|-------|
 | **P0** (Critical) | 0 | 1 | **1** |
-| **P1** (High) | 5 | 14 | **19** |
+| **P1** (High) | 4 | 14 | **18** |
 | **P2** (Medium) | 14 | 5 | **19** |
 | **Untagged** | 0 | 0 | **0** |
-| **TOTAL** | 19 | 20 | **39** |
+| **TOTAL** | 18 | 20 | **38** |
 
 ---
 
@@ -84,9 +84,10 @@ None identified. Critical issues have clear implementation paths.
 ## 📈 SPRINT PROGRESS (Current)
 
 **Sprint Goal:** Stability + Mobile UX foundation  
-**Burn Rate:** ~65% complete (13/22 estimated tasks)
+**Burn Rate:** ~73% complete (16/22 estimated tasks)
 
 ### Completed This Sprint:
+- ✅ **INFRA #40**: E2E pipeline with GitHub Actions (PR #40)
 - ✅ **FE #34**: Narrative display resilience (PR #58)
 - ✅ BE #17, #30, #31, #32: Security hardening & stream auth (PR #39 BE, PR #50 FE)
 - ✅ AI-001: HuggingFace image fallback
@@ -130,7 +131,8 @@ None.
 | **Token Economy** | 0 | 0 | 8 | 8 |
 | **Custom Genres** | 0 | 0 | 7 | 7 |
 
-**MVP Readiness:** 🟢 **75%** (AI Infrastructure hardening in progress, UI/UX foundation solid)
+**MVP Readiness:** 🟢 **80%** (AI Infrastructure hardening in progress, UI/UX foundation solid, E2E ready)
+
 
 ---
 
