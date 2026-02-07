@@ -20,6 +20,43 @@
 
 ---
 
+## [2026-02-05 19:05] AEP Turn - Dependency Cleanup
+**Issue:** #32 - [REFACTOR] Remove Duplicate Google Generative AI Dependencies (P1)
+**Status:** ✅ Completed
+**PR:** https://github.com/guillermopr94/adventure-forge/pull/33
+
+### Context
+Frontend had TWO Google AI packages (`@google/genai` and `@google/generative-ai`) causing type conflicts and bundle bloat.
+
+### Technical Actions
+1. **Dependency Audit:**
+   - Verified both packages were installed but `@google/genai` was completely unused in codebase.
+   - No imports or references found in any source files.
+
+2. **Cleanup:**
+   - Removed `@google/genai` from `package.json`.
+   - Ran `npm install` → 49 packages removed (including transitive deps).
+   - 587 lines removed from `package-lock.json`.
+
+### Verification
+- **Build:** ✅ SUCCESS (`npm run build`)
+- **Bundle Size:** 75.72 kB (main.js gzipped) - no regressions
+- **Import Errors:** None detected
+- **Lint Warnings:** Pre-existing only (unused vars, hook deps)
+
+### Acceptance Criteria
+- [x] Remove @google/genai from package.json
+- [x] Update imports (none found - package was unused)
+- [x] Test build succeeds
+- [x] Game turn generation verified (backend handles AI)
+
+### Next Steps
+- Complete #3 acceptance criteria (Frontend notifications for retries).
+- Polish UI/UX issues (#16, #17, #18).
+
+
+---
+
 ## [2026-02-07 13:55] AEP Turn - Backend Security & Stream Auth Integration
 **Issues:** #17, #30, #31, #32 (Backend) | #48 (Frontend)
 **Status:** ✅ Completed
