@@ -65,6 +65,7 @@ const StartScreenContent = (): React.ReactElement => {
                     onClick={() => setShowSettings(true)}
                     title={t('settings') || "Settings"}
                     style={{ position: 'static' }}
+                    data-testid="settings-open-btn"
                 >
                     <IoSettingsSharp size={30} color="white" />
                 </button>

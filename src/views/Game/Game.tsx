@@ -271,7 +271,8 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
           toast.error(`Stream Error: ${event.error}`);
           setIsProcessing(false);
         }
-      }
+      },
+      savedGameState?._id
     );
   }
 
@@ -403,7 +404,8 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
           toast.error(`Stream Error: ${event.error}`);
           setIsProcessing(false);
         }
-      }
+      },
+      savedGameState?._id
     );
   }
 
@@ -460,6 +462,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
 
       <div
         className="game-image-container fade-in"
+        data-testid="game-cinematic-container"
         onClick={() => {
           // Manual Advance Logic: 
           // 1. If overlay is visible (text shown), verify interaction is allowed
@@ -488,7 +491,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
         {t('loadingText')}
       </div>
 
-      <div id="options" className={areOptionsVisible && !isProcessing ? "fade-in-up" : ""} style={{ display: (areOptionsVisible && !isProcessing) ? 'flex' : 'none' }}>
+      <div id="options" data-testid="game-options-container" className={areOptionsVisible && !isProcessing ? "fade-in-up" : ""} style={{ display: (areOptionsVisible && !isProcessing) ? 'flex' : 'none' }}>
         <p className="choose-instruction fade-in-delayed">{t("choose_option")}</p>
         <button ref={option1} onClick={() => sendChoice(1)} disabled={!currentOptions[0]}>{currentOptions[0] || "Option 1"}</button>
         <button ref={option2} onClick={() => sendChoice(2)} disabled={!currentOptions[1]}>{currentOptions[1] || "Option 2"}</button>

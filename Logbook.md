@@ -1,3 +1,35 @@
+## [2026-02-07 13:55] AEP Turn - Backend Security & Stream Auth Integration
+**Issues:** #17, #30, #31, #32 (Backend) | #48 (Frontend)
+**Status:** ✅ Completed
+**PRs:**
+- Backend: https://github.com/guillermopr94/adventure-forge-api/pull/39
+- Frontend: Pending (branch `feat/stream-auth-integration`)
+
+### Context
+Completing the security hardening for the game streaming endpoint. Previously, `/game/stream` was public and didn't verify resource ownership.
+
+### Technical Actions
+1. **Backend Security (API):**
+   - Moved `AuthGuard` to `GameController` class level, ensuring all game endpoints are protected by default.
+   - Refactored `streamTurn` to extract `userId` from `req.user`.
+   - Implemented mandatory ownership validation: if a `saveId` is provided in the stream request, the system verifies it belongs to the authenticated user before initiating AI generation.
+   - Updated `GameService.streamTurn` signature to include `userId` for future auditing/tracking.
+2. **Frontend Integration:**
+   - Updated `useGameStream` hook to accept an optional `saveId` and include it in the POST body.
+   - Refactored `Game.tsx` to pass the current `savedGameState?._id` to the stream service during gameplay.
+   - Verified that the `Authorization: Bearer <token>` header is correctly attached to SSE connection requests.
+
+### Verification
+- Backend `npm run build`: SUCCESS ✅
+- Frontend `npm run build`: In Progress...
+- Security: Unauthorized access to other users' game streams via `saveId` is now blocked with HTTP 403.
+
+### Next Steps
+- Finalize frontend PR merge.
+- Address P0 #34 (Narrative text hidden if image missing).
+
+---
+
 ## [2026-02-05 18:07] PR Manager - Merged #14 (Quota Monitoring)
 **PR:** https://github.com/guillermopr94/adventure-forge-api/pull/14
 **Status:** ✅ MERGED
