@@ -29,10 +29,6 @@ interface GameProps {
 
 const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, genreKey }): React.ReactElement => {
 
-  const option1 = useRef<HTMLButtonElement>(null);
-  const option2 = useRef<HTMLButtonElement>(null);
-  const option3 = useRef<HTMLButtonElement>(null);
-
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { setPollinationsToken, pollinationsToken, navigate, savedGameState, setSavedGameState, goBack } = useNavigation();
@@ -198,18 +194,6 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
 
   function updateOptionButtons(opts: string[]) {
     setCurrentOptions(opts);
-    const buttons = [option1, option2, option3];
-    for (let i = 0; i < 3; i++) {
-      if (buttons[i].current) {
-        if (opts[i]) {
-          buttons[i].current!.textContent = opts[i];
-          buttons[i].current!.disabled = false;
-        } else {
-          buttons[i].current!.textContent = `Option ${i + 1}`;
-          buttons[i].current!.disabled = true;
-        }
-      }
-    }
   }
 
   // --- Core Game Logic ---
@@ -219,8 +203,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     setIsProcessing(true);
     setCurrentImage(null);
 
-    const buttons = [option1, option2, option3];
-    const choiceText = buttons[choiceIndex - 1].current?.textContent || `Option ${choiceIndex}`;
+    const choiceText = currentOptions[choiceIndex - 1] || `Option ${choiceIndex}`;
     const prompt = `I choose option ${choiceIndex}: ${choiceText}. What happens next?`;
 
     const currentHistory = [...gameHistory, { role: "user", parts: [{ text: prompt }] }];
@@ -511,9 +494,9 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
 
       <div id="options" data-testid="game-options-container" className={areOptionsVisible && !isProcessing ? "fade-in-up" : ""} style={{ display: (areOptionsVisible && !isProcessing) ? 'flex' : 'none' }}>
         <p className="choose-instruction fade-in-delayed">{t("choose_option")}</p>
-        <button ref={option1} onClick={() => sendChoice(1)} disabled={!currentOptions[0]}>{currentOptions[0] || "Option 1"}</button>
-        <button ref={option2} onClick={() => sendChoice(2)} disabled={!currentOptions[1]}>{currentOptions[1] || "Option 2"}</button>
-        <button ref={option3} onClick={() => sendChoice(3)} disabled={!currentOptions[2]}>{currentOptions[2] || "Option 3"}</button>
+        <button onClick={() => sendChoice(1)} disabled={!currentOptions[0]}>{currentOptions[0] || "Option 1"}</button>
+        <button onClick={() => sendChoice(2)} disabled={!currentOptions[1]}>{currentOptions[1] || "Option 2"}</button>
+        <button onClick={() => sendChoice(3)} disabled={!currentOptions[2]}>{currentOptions[2] || "Option 3"}</button>
       </div>
 
       {user && (
