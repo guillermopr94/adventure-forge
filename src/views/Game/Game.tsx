@@ -46,6 +46,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
   const [cinematicSegments, setCinematicSegments] = useState<{ text: string; image?: string }[]>([]);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   // Text & Interaction State
   const [gameContent, setGameContent] = useState<string[]>([]);
@@ -263,7 +264,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             });
             const img = new Image();
             img.src = event.data;
-            if (event.index === 0) {
+            if (event.index === currentSegmentIndex) {
               setCurrentImage(event.data);
               setIsImageMissing(false);
             }
@@ -278,7 +279,8 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
           toast.error(`Stream Error: ${event.error}`);
           setIsProcessing(false);
         }
-      }
+      },
+      savedGameState?._id
     );
   }
 
@@ -315,9 +317,16 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     const currentSegment = cinematicSegments[currentSegmentIndex];
     if (currentSegment) {
       const text = currentSegment.text;
+      setImageError(false); // Reset error state for new segment
 
       // FIX #34: Decouple text display from image loading
       // Text should ALWAYS render, regardless of image status
+      // Update current image if available, but don't block
+      if (currentSegment.image && currentImage !== currentSegment.image) {
+        setCurrentImage(currentSegment.image);
+      } else if (!currentSegment.image && currentImage) {
+        setCurrentImage(null);
+      }
       if (lastProcessedTextRef.current !== text) {
         lastProcessedTextRef.current = text;
 
@@ -410,7 +419,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             });
             const img = new Image();
             img.src = event.data;
-            if (event.index === 0) {
+            if (event.index === currentSegmentIndex) {
               setCurrentImage(event.data);
               setIsImageMissing(false);
             }
@@ -423,7 +432,8 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
           toast.error(`Stream Error: ${event.error}`);
           setIsProcessing(false);
         }
-      }
+      },
+      savedGameState?._id
     );
   }
 
@@ -490,8 +500,20 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
         }}
         style={{ cursor: (!isProcessing && !areOptionsVisible) ? 'pointer' : 'default' }}
       >
-        {currentImage && (
-          <img src={currentImage} alt="Scene" className="game-scene-image" />
+        {currentImage && !imageError ? (
+          <img 
+            src={currentImage} 
+            alt="Scene" 
+            className="game-scene-image" 
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="image-placeholder">
+             <div className="shimmer"></div>
+             <p className="placeholder-text">
+               {imageError ? (t('image_error') || "Image failed to load") : (t('visualizing_scene') || "Visualizing scene...")}
+             </p>
+          </div>
         )}
         {/* FIX #34: Fallback placeholder when image is missing */}
         {isImageMissing && !currentImage && (

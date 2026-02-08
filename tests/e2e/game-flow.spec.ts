@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+// Skip this test in CI - requires real AI backend with valid API keys
+// Run locally with: npx playwright test game-flow.spec.ts
+test.skip(!!process.env.CI, 'Skipping AI-dependent test in CI environment');
+
 test('User can start a new game in Spanish and reach the first option', async ({ page }) => {
     test.setTimeout(200000); // Increase timeout for AI generation
 
