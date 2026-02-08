@@ -62,6 +62,9 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [sentences, setSentences] = useState<string[]>([]);
 
+  // Image Fallback State
+  const [isImageMissing, setIsImageMissing] = useState(false);
+
   // Theme & Audio Config
   const audioFile = getAdventureType(genreKey).music;
 
@@ -218,6 +221,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     toggleOptions(false);
     setIsProcessing(true);
     setCurrentImage(null);
+    setIsImageMissing(false);
 
     const buttons = [option1, option2, option3];
     const choiceText = buttons[choiceIndex - 1].current?.textContent || `Option ${choiceIndex}`;
@@ -260,7 +264,10 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             });
             const img = new Image();
             img.src = event.data;
-            if (event.index === currentSegmentIndex) setCurrentImage(event.data);
+            if (event.index === currentSegmentIndex) {
+              setCurrentImage(event.data);
+              setIsImageMissing(false);
+            }
           }
         }
         else if (event.type === 'audio') {
@@ -312,19 +319,31 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
       const text = currentSegment.text;
       setImageError(false); // Reset error state for new segment
 
+      // FIX #34: Decouple text display from image loading
+      // Text should ALWAYS render, regardless of image status
       // Update current image if available, but don't block
       if (currentSegment.image && currentImage !== currentSegment.image) {
         setCurrentImage(currentSegment.image);
       } else if (!currentSegment.image && currentImage) {
-        // Only clear currentImage if we explicitly have no image for this segment
-        // Wait, if it's still loading (undefined), we keep the old one or show spinner?
-        // Actually, if currentSegmentIndex changed, we should probably clear it if the new segment doesn't have it yet.
         setCurrentImage(null);
       }
-
       if (lastProcessedTextRef.current !== text) {
         lastProcessedTextRef.current = text;
 
+        // Update image state (null if missing)
+        if (currentSegment.image) {
+          setCurrentImage(currentSegment.image);
+          setIsImageMissing(false);
+        } else {
+          setCurrentImage(null);
+          setIsImageMissing(true);
+          // Show toast notification when image is missing
+          if (currentSegmentIndex === 0) {
+            toast('Image loading...', { icon: '🖼️', duration: 2000 });
+          }
+        }
+
+        // ALWAYS process text, even without image
         const newSentences = splitIntoSentences(text);
         setSentences(newSentences);
         currentSentenceIndexRef.current = 0;
@@ -336,7 +355,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     } else {
       lastProcessedTextRef.current = null;
     }
-  }, [currentSegmentIndex, cinematicSegments, currentImage]);
+  }, [currentSegmentIndex, cinematicSegments]);
 
 
   // --- Initialization & Save ---
@@ -400,7 +419,10 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             });
             const img = new Image();
             img.src = event.data;
-            if (event.index === currentSegmentIndex) setCurrentImage(event.data);
+            if (event.index === currentSegmentIndex) {
+              setCurrentImage(event.data);
+              setIsImageMissing(false);
+            }
           }
         }
         else if (event.type === 'audio') {
@@ -493,6 +515,13 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
              </p>
           </div>
         )}
+        {/* FIX #34: Fallback placeholder when image is missing */}
+        {isImageMissing && !currentImage && (
+          <div className="image-placeholder">
+            <div className="shimmer-effect"></div>
+            <p className="image-loading-text">🖼️ Generating scene...</p>
+          </div>
+        )}
         <div className={`cinematic-text-overlay ${overlayVisible ? 'visible' : ''}`}>
           <p>
             <Typewriter 
@@ -505,7 +534,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
         </div>
       </div>
 
-      <div className="spinner" style={{ display: isProcessing && !currentImage ? 'block' : 'none' }}>
+      <div className="spinner" style={{ display: isProcessing && !currentImage && !isImageMissing ? 'block' : 'none' }}>
         {t('loadingText')}
       </div>
 
