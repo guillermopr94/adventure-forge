@@ -1,3 +1,110 @@
+## [2026-02-12 17:50] AEP Turn - AI Key Fallback Security Hardening
+**Issue:** #80 - [SEC] #49.2 - Enforce Conditional Fallback Logic
+**Status:** ✅ Completed
+**PR:** https://github.com/guillermopr94/adventure-forge-api/pull/86
+
+### Context
+Issue #80 (part of #49) aimed to implement "Defense in Depth" for AI endpoints. The goal was to prevent the backend from falling back to server-side environment keys (Gemini, Pollinations, OpenAI) when processing unauthenticated requests, ensuring that server resources are only consumed by authorized users.
+
+### Technical Actions
+1. **Service Layer Hardening (AiService):**
+   - Refactored `generateText`, `generateAudio`, `generateImage`, and `generateGameTurn` to accept a mandatory `isAuthenticated: boolean` flag.
+   - Updated internal logic to only allow `process.env` fallback if `isAuthenticated` is `true`.
+   - Methods now prioritize user-provided keys from headers; if missing, they check authentication status before using server keys.
+2. **Controller Integration:**
+   - **AiController:** Updated all endpoints to extract authentication status from `req.user` (populated by `AuthGuard`) and pass it to `AiService`.
+   - **GameController:** Refactored `streamTurn` to pass authentication status to `GameService`.
+3. **Game Service Refactor:**
+   - Updated `GameService.streamTurn` to propagate the `isAuthenticated` flag down to all `AiService` calls (GameTurn, Image, Audio).
+
+### Verification
+- **Backend Build:** ✅ SUCCESS (`npm run build`)
+- **Security:** If an endpoint were to be made public or a guard bypassed, unauthenticated requests would now fail to use server-side AI keys unless the user provides their own.
+
+### Next Steps
+- Address P0 #96 (Frontend handling of 401 Unauthorized in Stream).
+
+---
+
+## [2026-02-08 08:45] PR Manager - Merged #39 (Stream Auth & Ownership)
+**PR:** https://github.com/guillermopr94/adventure-forge-api/pull/39
+**Status:** ✅ MERGED
+**Branch:** `fix/security-stream-auth` → deleted
+
+### Technical Summary
+- **Security Hardening:** Applied `AuthGuard` to `GameController`. All game-related endpoints now require a valid user session.
+- **Resource Ownership:** Implemented validation to ensure users can only access or stream game turns for saves they own.
+- **Service Integration:** Refactored `streamTurn` to pass the authenticated `userId` to the internal game logic for proper record keeping.
+
+### Merge Details
+- **Squash merge:** Merged into `main`.
+- **Issues closed:** Closes #17, #30, #31, #32 (adventure-forge-api).
+
+---
+
+## [2026-02-08 08:30] PR Manager - Merged #73 (AI Security & CI Fix)
+**PR:** https://github.com/guillermopr94/adventure-forge-api/pull/73
+**Status:** ✅ MERGED
+**Branch:** `fix/ai-controller-auth-security` → deleted
+
+### Technical Summary
+- **Security Hardening:** Re-enabled `AuthGuard` in `AiController`. All AI endpoints now require authentication.
+- **Dependency Fix:** Imported `AuthModule` in `AiModule` to resolve `AuthService` dependency injection required by `AuthGuard`.
+- **CI/CD Stabilization:** Updated E2E workflow to start the frontend service. Playwright tests now correctly wait for both backend (3001) and frontend (3000) before executing.
+
+### Merge Details
+- **Squash merge:** Merged into `main`.
+- **Issues closed:** Closes #69 (adventure-forge-api).
+
+---
+
+## [2026-02-08 08:25] AEP Turn - AI Controller Security Hardening
+**Issues:** #69 - [SECURITY] Publicly Exposed AI Endpoints in AiController | #71 - [SECURITY] Re-enable AuthGuard on AI Endpoints
+**Status:** ✅ Completed
+**PR:** https://github.com/guillermopr94/adventure-forge-api/pull/73
+
+### Context
+`AiController` had the `AuthGuard` commented out, exposing all AI endpoints (text, audio, image generation) to the public. This posed a significant security risk and potential for unauthorized API cost accumulation.
+
+### Technical Actions
+1. **Security Hardening (API):**
+   - Re-enabled `@UseGuards(AuthGuard)` at the `AiController` class level.
+   - All AI generation endpoints (`/ai/text`, `/ai/audio`, `/ai/batch-audio`, `/ai/image`) and stats endpoint (`/ai/quota-stats`) now require a valid Google ID token.
+2. **Code Cleanup:**
+   - Removed the stale comment that was disabling the guard "until MongoDB is restored" (MongoDB is confirmed operational).
+
+### Verification
+- **Backend Build:** ✅ SUCCESS (`npm run build`)
+- **Security:** Public access to AI endpoints is now blocked, returning 401 Unauthorized without a valid Bearer token.
+
+### Next Steps
+- Address P0 #87 (Frontend currentOptions synchronization bug).
+
+---
+
+## [2026-02-08 01:55] AEP Turn - Option Buttons State Refactor
+**Issue:** #59 - [BUG] Direct DOM manipulation in updateOptionButtons
+**Status:** ✅ Completed
+**PR:** https://github.com/guillermopr94/adventure-forge/pull/76
+
+### Context
+Issue #59 identified a React anti-pattern in `Game.tsx` where option button text and disabled state were being manipulated directly via DOM refs (`button.current.textContent`). This caused synchronization issues with React's state and rendered the buttons unreliable.
+
+### Technical Actions
+1. **Refs Removed:** Deleted `option1`, `option2`, and `option3` `useRef` hooks from `Game.tsx`.
+2. **State-Driven UI:**
+   - Refactored `updateOptionButtons` to strictly use `setCurrentOptions(opts)`, removing all direct DOM access.
+   - Updated JSX for buttons to rely solely on the `currentOptions` state for content and the `disabled` attribute.
+3. **Logic Cleanup:**
+   - Updated `sendChoice` to retrieve selected option text directly from the `currentOptions` state instead of reading from the DOM.
+   - Removed redundant `ref` assignments in the component's render method.
+
+### Verification
+- **Frontend Build:** ✅ SUCCESS
+- **Code Quality:** Adheres to React's declarative nature, eliminating potential race conditions between manual DOM changes and React re-renders.
+
+---
+
 ## [2026-02-07 19:40] AEP Turn - Narrative Flow & Image Resilience
 **Issue:** #34 - [BUG] Narrative text is hidden/skipped if segment image is missing
 **Status:** ✅ Completed

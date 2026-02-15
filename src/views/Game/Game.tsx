@@ -47,9 +47,9 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
   // Text & Interaction State
   const [gameContent, setGameContent] = useState<string[]>([]);
   const [gameHistory, setGameHistory] = useState<any[]>(savedGameState ? savedGameState.gameHistory : []);
-  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
+  const [currentOptions, setCurrentOptions] = useState<string[]>(savedGameState?.currentOptions || []);
   const [areOptionsVisible, setAreOptionsVisible] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(!!savedGameState);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isGameStarted, setIsGameStarted] = useState(!!savedGameState);
 
   // Cinematic Overlay State

@@ -1,163 +1,106 @@
 # 🎯 Adventure Forge - Sprint Dashboard
 
-**Last Updated:** 2026-02-07 19:55 CET  
+**Last Updated:** 2026-02-15 16:30 CET  
 **Phase:** MVP Foundation (Q1 2026)  
-**Sprint Theme:** "Rock-solid foundation + Mobile-first"
+**Sprint Theme:** "Rock-solid foundation + Mobile-first + Guest Play"
 
 ---
 
-## 📊 Backlog Overview
+## 📊 Backlog Overview (Synced)
 
 | Priority | Frontend | Backend | Total |
 |----------|----------|---------|-------|
-| **P0** (Critical) | 0 | 1 | **1** |
-| **P1** (High) | 4 | 14 | **18** |
-| **P2** (Medium) | 14 | 5 | **19** |
-| **Untagged** | 0 | 0 | **0** |
-| **TOTAL** | 18 | 20 | **38** |
+| **P0** (Critical) | 1 | 2 | **3** |
+| **P1** (High) | 10 | 12 | **22** |
+| **P2** (Medium) | 25 | 15 | **40** |
+| **TOTAL** | **36** | **29** | **65** |
 
 ---
 
 ## 🚨 TOP 5 CRITICAL PRIORITIES
 
-### 1. [P0] [SECURITY] Missing AuthGuard on /game/stream (BE #17)
-**Impact:** Unauthorized users can consume AI resources. Potential cost leak.  
+### 1. [P0] [GUEST-PLAY] Finalize Public AI Flow (BE #110)
+**Impact:** Allows users to play without Google Login. Increases conversion.  
+**Status:** IMPLEMENTED (Backend). Testing in Production.
 **Acceptance Criteria:**
-- JWT validation on `/game/stream` endpoint
-- 401 response for unauthenticated requests
-- Rate limiting per user verified
+- `/ai/*` and `/game/stream` endpoints accessible without Bearer token
+- Server-side API Keys (Gemini/Pollinations) used for guest sessions
+- Auth required ONLY for `/game/save`, `/game/list`, etc.
 
-**Action:** IMMEDIATE FIX REQUIRED
+**Action:** VALIDATE PRODUCTION FLOW
 
 ---
 
-### 2. [P0] Backend AI Orchestration & Context Management (BE #1)
+### 2. [P0] [BUG] Sync currentOptions State (FE #87)
+**Impact:** Buttons are not updating correctly with Gemini's response, breaking the gameplay loop.
+**Acceptance Criteria:**
+- Refactor buffer handling in `useGameStream` to avoid JSON fragmentation
+- Ensure `currentOptions` reflects latest AI choice at all times
+
+**Action:** REFACTOR FE STATE LOGIC
+
+---
+
+### 3. [P0] Backend AI Orchestration & Context Management (BE #1)
 **Impact:** Story coherence and long-term session stability.  
 **Acceptance Criteria:**
 - NestJS service for prompt assembly with context (last 10 turns)
-- API endpoints for `next_step` and `get_history` fully functional
-- Context compression/summarization logic implemented
+- Token counting and window management to avoid AI context overflow
 
-**Action:** CORE FEATURE - PRIORITY EXECUTION
-
----
-
-### 3. [P1] [STABILITY] Implement Global ValidationPipe (BE #18)
-**Impact:** Prevents malformed requests. Increases API resilience.  
-**Acceptance Criteria:**
-- `class-validator` + `class-transformer` configured in `main.ts`
-- All incoming DTOs validated automatically
-- 400 Bad Request for invalid payloads
-
-**Action:** QUICK WIN - 30 MIN TASK
+**Action:** IMPLEMENT PROMPT ASSEMBLY SERVICE
 
 ---
 
-### 4. [P1] AI Infrastructure: Model Fallback & Exponential Retry (FE #3)
-**Impact:** High availability of AI services. Supports "Stability First" objective.  
-**Status:** Partially implemented
+### 4. [P1] [STABILITY] Global Exception Filter & Validation (BE #18, #87)
+**Impact:** Standardizes error responses and prevents malformed requests.
 **Acceptance Criteria:**
-- Circuit breaker pattern for repeated provider failures
-- Automatic fallback to next healthy provider in chain
-- Exponential backoff on retries
+- Global `ExceptionFilter` implemented
+- `class-validator` configured for all DTOs
 
-**Action:** Complete resilience infrastructure
+**Action:** SETUP PIPES & FILTERS
 
 ---
 
-### 5. [P2] [RESILIENCE] Missing AbortController in useGameStream (FE #36)
-**Impact:** Prevents memory leaks and orphaned requests.
+### 5. [P1] [UX] Mobile-First Cinematic Layout (FE #67)
+**Impact:** Essential for North Star mobile goal.
 **Acceptance Criteria:**
-- Stream aborted when component unmounts
-- Clean cleanup of SSE events
+- Hit-areas >= 44px
+- Responsive Bottom Sheet for narrative text
 
-**Action:** Stability improvement.
+**Action:** OPTIMIZE MOBILE UI
 
 ---
 
 ## 🔥 BLOCKERS
 
-None identified. Critical issues have clear implementation paths.
+- **FE #108**: Translation key leak (`visualizing_scene`) in Production. Needs merge of `fix/option-buttons-react-state`.
 
 ---
 
 ## 📈 SPRINT PROGRESS (Current)
 
-**Sprint Goal:** Stability + Mobile UX foundation  
-**Burn Rate:** ~73% complete (16/22 estimated tasks)
+**Sprint Goal:** Stability + Mobile UX foundation + Guest Play  
+**Burn Rate:** ~82% complete ⚡
 
-### Completed This Sprint:
-- ✅ **INFRA #40**: E2E pipeline with GitHub Actions (PR #40)
-- ✅ **FE #34**: Narrative display resilience (PR #58)
-- ✅ BE #17, #30, #31, #32: Security hardening & stream auth (PR #39 BE, PR #50 FE)
-- ✅ AI-001: HuggingFace image fallback
-- ✅ CIN-001: Typewriter effect (PR #25)
-- ✅ AI-002: Quota monitoring (PR #14)
-- ✅ AI-007: Hardened AI prompts & parsing
-- ✅ AI-008: Markdown cleanup in narratives
-- ✅ FE #9: Game history context loss fix
+### Recently Completed:
+- ✅ **BE #80**: Conditional AI Key Fallback (Hardened server security)
+- ✅ **BE #110**: Guest Play Implementation (Public AI endpoints)
+- ✅ **CRON**: PR Manager now fixes builds automatically
 
 ### In Progress:
-- ⏳ #1: Backend context management (BE)
-
-### Blocked/Stalled:
-None.
+- ⏳ **FE #87**: currentOptions state sync
+- ⏳ **BE #1**: Backend context management
 
 ---
 
 ## 🎯 NEXT ACTIONS
 
 ### For Autonomous Agents (AEP):
-1. **BE #17** - Add AuthGuard to streaming (CRITICAL)
-2. **BE #18** - Global ValidationPipe (QUICK WIN)
-3. **FE #32** - Remove duplicate deps (QUICK WIN)
-4. **FE #3** - Complete circuit breaker logic
-5. **FE #36** - AbortController cleanup
-
-### For Product Manager (SPSM):
-1. ✅ Backlog synced with GitHub (41 issues tracked)
-2. ✅ All issues have priority labels
-3. Monitor PR #14 and #25 for merging
-
----
-
-## 📊 EPIC STATUS
-
-| Epic | Done | In Progress | Pending | Total |
-|------|------|-------------|---------|-------|
-| **AI Infrastructure** | 6 | 1 | 2 | 9 |
-| **Mobile-First UI** | 2 | 1 | 4 | 7 |
-| **Cinematic Polish** | 2 | 0 | 4 | 6 |
-| **Token Economy** | 0 | 0 | 8 | 8 |
-| **Custom Genres** | 0 | 0 | 7 | 7 |
-
-**MVP Readiness:** 🟢 **80%** (AI Infrastructure hardening in progress, UI/UX foundation solid, E2E ready)
-
-
----
-
-## 🚀 MILESTONES
-
-| Milestone | Target | Status | Risk |
-|-----------|--------|--------|------|
-| Stable Image Gen | Feb 2026 | 🟢 DONE | None |
-| Mobile UI Complete | Feb 2026 | 🟡 IN PROGRESS | Medium |
-| Token System MVP | Mar 2026 | 🟡 STARTING | Medium (auth needed) |
-| Public Beta | Apr 2026 | ⏳ PENDING | TBD |
-
----
-
-## 📝 TECHNICAL DEBT
-
-| ID | Debt Item | Impact | Effort |
-|----|-----------|--------|--------|
-| TD-001 | Duplicate Google AI deps (FE #32) | Bundle size | 30min |
-| TD-002 | No ValidationPipe (BE #18) | Stability | 30min |
-| TD-003 | AiService monolith (BE #4) | Testability | 4h |
-| TD-004 | useGameStream leaks (FE #36) | Performance | 1h |
+1. **FE #108** - Merge translation fixes to `main`
+2. **FE #87** - Refactor SSE buffer logic
+3. **BE #18** - Implement ValidationPipe
 
 ---
 
 > **Dashboard maintained by:** CHATYI (SPSM Protocol)  
-> **Next SPSM Sync:** 2026-02-08 01:00 CET  
-> **Reference:** [VISION.md](./VISION.md)
+> **Next SPSM Sync:** 2026-02-16 01:00 CET  
