@@ -1,139 +1,103 @@
 # 🎯 Adventure Forge - Sprint Dashboard
 
-**Last Updated:** 2026-02-15 16:30 CET  
+**Last Updated:** 2026-02-17 15:10 CET  
 **Phase:** MVP Foundation (Q1 2026)  
-**Sprint Theme:** "Rock-solid foundation + Mobile-first + Guest Play"
+**Sprint Theme:** "Stability + Performance + Developer Experience"
 
 ---
 
-## 📊 Backlog Overview (Synced)
+## 📊 Backlog Overview (Synced with GitHub)
 
-| Priority | Frontend | Backend | Total |
-|----------|----------|---------|-------|
-| **P0** (Critical) | 0 | 2 | **2** |
-| **P1** (High) | 11 | 13 | **24** |
-| **P2** (Medium) | 25 | 15 | **40** |
-| **TOTAL** | **36** | **30** | **66** |
+| Priority | Total Issues |
+|----------|--------------|
+| **P0** (Critical) | 11 |
+| **P1** (High) | 25 |
+| **P2** (Medium) | 30 |
+| **TOTAL OPEN** | **66** |
+
+**Category Breakdown:**
+- 🐛 **Bugs:** 12
+- ✨ **Enhancements:** 19
+- ⚙️ **Tech Debt / Refactor:** 16
+- 🏗️ **Infrastructure:** 5
+- 🧪 **Testing:** 1
 
 ---
 
 ## 🚨 TOP 5 CRITICAL PRIORITIES
 
-### 1. [P0] [GUEST-PLAY] Finalize Public AI Flow (BE #110)
-**Impact:** Allows users to play without Google Login. Increases conversion.  
-**Status:** IMPLEMENTED (Backend). Testing in Production.
+### 1. [P0] [BUG] Sync currentOptions State (Issue #87)
+**Impact:** Gameplay loop breakage; users see placeholder options instead of AI choices.  
 **Acceptance Criteria:**
-- `/ai/*` and `/game/stream` endpoints accessible without Bearer token
-- Server-side API Keys (Gemini/Pollinations) used for guest sessions
-- Auth required ONLY for `/game/save`, `/game/list`, etc.
-
-**Action:** VALIDATE PRODUCTION FLOW
+- Atomic Stream Event Handling implemented (#92)
+- Reactive Option State Subscription functional (#93)
+- Dynamic Option Buttons UI updated (#94)
+**Status:** IN ANALYSIS.
 
 ---
 
-### 2. [P0] [BUG] Sync currentOptions State (FE #87)
-**Impact:** Buttons are not updating correctly with Gemini's response, breaking the gameplay loop.
-**Status:** ✅ RESOLVED (2026-02-17)
+### 2. [P0] [BUG] Translation Keys Leak (Issue #108, #95)
+**Impact:** UI shows raw i18n keys (e.g., `game.loading`) in production.  
 **Acceptance Criteria:**
-- Refactor buffer handling in `useGameStream` to avoid JSON fragmentation
-- Ensure `currentOptions` reflects latest AI choice at all times
-
-**Action:** REFACTOR FE STATE LOGIC (Completed)
+- Merge fix for missing translation bundles in production build
+- Verify all cinematic strings render correctly in English/Spanish
+**Status:** OPEN.
 
 ---
 
-### 3. [P0] Backend AI Orchestration & Context Management (BE #1)
-**Impact:** Story coherence and long-term session stability.  
+### 3. [P0] [UX] Mobile-First Narrative Layout (Issue #99, #100)
+**Impact:** North Star mobile goal. Essential for touch-screen play.  
 **Acceptance Criteria:**
-- NestJS service for prompt assembly with context (last 10 turns)
-- Token counting and window management to avoid AI context overflow
-
-**Action:** IMPLEMENT PROMPT ASSEMBLY SERVICE
+- Touch targets >= 44px (#99)
+- Bottom Sheet Layout for narrative text on small screens (#100)
+**Status:** OPEN.
 
 ---
 
-### 4. [P1] [STABILITY] Global Exception Filter & Validation (BE #18, #87)
-**Impact:** Standardizes error responses and prevents malformed requests.
+### 4. [P0] [UX] Auth Error Handling in Stream (Issue #96, #104, #105)
+**Impact:** User frustration when session expires mid-story.  
 **Acceptance Criteria:**
-- Global `ExceptionFilter` implemented
-- `class-validator` configured for all DTOs
-
-**Action:** SETUP PIPES & FILTERS
+- Detection of 401/Unauthorized in `useGameStream` (#104)
+- User-friendly "Session Expired" modal (#105)
+**Status:** OPEN.
 
 ---
 
-### 5. [P1] [UX] Mobile-First Cinematic Layout (FE #67)
-**Impact:** Essential for North Star mobile goal.
+### 5. [P1] [TECH DEBT] Frontend Migration to Vite (Issue #109)
+**Impact:** Developer experience, build speed, and HMR stability.  
 **Acceptance Criteria:**
-- Hit-areas >= 44px
-- Responsive Bottom Sheet for narrative text
-
-**Action:** OPTIMIZE MOBILE UI
-
----
-
-### 6. [P1] [INFRA] Local GPU Image Generation (Issue #111)
-**Impact:** Zero cost image generation, higher quality (SDXL/Flux), and faster iterations using local RTX 3060.
-**Status:** ✅ OPERATIONAL. Tunnel active and connected to Render.
-**Acceptance Criteria:**
-- Local inference server running on local machine (SDXL-Lightning)
-- Secure tunnel exposing API to Render backend (Cloudflare Tunnel)
-- Backend strategy prioritizing Local GPU
-
-**Action:** MONITOR STABILITY
-
----
-
-### 7. [P1] [QA] Robust PR Validation Pipeline (Issue #112)
-**Impact:** Prevents regressions and broken builds from reaching `main`.
-**Acceptance Criteria:**
-- PR Verify includes: Linting, Type Checking, Unit Tests, and E2E Smoke Tests.
-- Mandatory status checks enabled on GitHub for both repos.
-- Automated "Test Summary" posted on every PR.
-
-**Action:** HARDEN GITHUB ACTIONS WORKFLOWS
-
----
-
-### 8. [P1] [TEST] Full App E2E Coverage (Playwright) (Issue #113)
-**Impact:** Verifies every user journey is functional before deployment.
-**Acceptance Criteria:**
-- Tests for: Adventure Selection, Settings (Language/Theme), and Game Loop.
-- Integration tests with mocked AI responses for deterministic CI runs.
-- Visual regression snapshots for critical UI components.
-
-**Action:** EXPAND PLAYWRIGHT TEST SUITE
+- CRA removed, Vite dependencies installed (#113)
+- Environment variables & build pipeline updated (#114, #116)
+**Status:** IN PROGRESS (Sub-tasks #113-#116 created).
 
 ---
 
 ## 🔥 BLOCKERS
 
-None.
+- **NONE**: Focus is on stability and tech-debt reduction.
 
 ---
 
 ## 📈 SPRINT PROGRESS (Current)
 
-**Sprint Goal:** Stability + Mobile UX foundation + Guest Play  
-**Burn Rate:** ~85% complete ⚡
+**Sprint Goal:** Stability + Tech Debt + Mobile UX  
+**Burn Rate:** Steady. 6 issues closed since last major milestone.
 
 ### Recently Completed:
-- ✅ **BE #80**: Conditional AI Key Fallback (Hardened server security)
-- ✅ **BE #110**: Guest Play Implementation (Public AI endpoints)
-- ✅ **FE #108**: Translation key leak fixed and merged to main
-- ✅ **CRON**: PR Manager now fixes builds automatically
-- ✅ **SYSTEM**: Gateway restarted to fix latency issues
+- ✅ **FE #34**: Narrative text visibility fix (Image skip bug)
+- ✅ **BE #63**: Refactor Option Buttons to React State
+- ✅ **CI #38**: Docker Compose for Integrated E2E Testing
 
 ---
 
 ## 🎯 NEXT ACTIONS
 
 ### For Autonomous Agents (AEP):
-1. **FE #108** - Merge translation fixes to `main`
-2. **FE #87** - Refactor SSE buffer logic
-3. **BE #18** - Implement ValidationPipe
+1. **FE #108** - Root cause analysis of i18n leak in production
+2. **FE #92** - Implementation of atomic SSE buffer processing
+3. **FE #113** - Start Vite migration dependencies install
 
 ---
 
 > **Dashboard maintained by:** CHATYI (SPSM Protocol)  
-> **Next SPSM Sync:** 2026-02-16 01:00 CET  
+> **Next SPSM Sync:** 2026-02-18 01:00 CET  

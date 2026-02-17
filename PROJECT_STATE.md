@@ -1,25 +1,28 @@
-# Project State
-*Auto-updated: 2026-02-16 17:15*
+# Project State (Adventure Forge - Frontend)
+*Auto-updated by Pi (SPTA Protocol)*
 
 ## Last Commit
-- **Hash:** 33d2f7b
-- **Message:** docs: resolve conflict in Logbook.md
+- **Hash:** 317c778
+- **Message:** fix(game): refactor SSE buffer and sync currentOptions state (FE #87)
 - **Branch:** main
-- **Author:** Guillermo Pérez Ruiz
-- **When:** 2026-02-15 16:15:31 +0100
-- **Files changed:** 1
+- **When:** 2026-02-17
 
 ## Recent Changes
+- 317c778: fix(game): refactor SSE buffer and sync currentOptions state (FE #87)
+- 83fbb2d: chore: sync project context [skip ci]
 - 33d2f7b: docs: resolve conflict in Logbook.md
 - 3a1d230: docs: sync dashboard and logbook state
 - 3243312: fix(ux): add missing translation keys for game state
-- 328ce22: fix(game): refactor option buttons to use React state (#76)
-- c9d6177: [FIX] Narrative text displays even when image is missing (#34) (#43)
 
 ## Current Focus
-Infrastructure stability and mobile optimization. Resolving context loss in game state.
+Stability and UX synchronization. Specifically addressing the P0 issue where `currentOptions` were not correctly reflected in the UI during streaming.
+
+## Technical Architect Findings (SPTA)
+- **Build Status:** SUCCESS (with ESLint warnings).
+- **Architecture:** `Game.tsx` is a God Component (20k lines approx). Needs decomposition into smaller hooks or sub-components.
+- **Resilience:** Improved SSE handling, but still lacks explicit `AbortController` in some areas.
 
 ## Suggested Next Steps
-- Implement PIV protocol for feature parity in mobile.
-- Refactor Game.tsx to reduce complexity (God Component).
-- Increase test coverage (currently 8%).
+1. Resolve ESLint warnings in `Game.tsx` to ensure hook stability.
+2. Implement `AbortController` in `useGameStream` to prevent memory leaks or state updates on unmounted components.
+3. Migrate to Vite to improve developer experience and build speed.
