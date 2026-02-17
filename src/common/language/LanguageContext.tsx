@@ -35,11 +35,17 @@ export function useTranslation() {
     }, [language]);
 
     const t = (key: string, variables?: { [key: string]: any }) => {
-        let text = currentTranslations[key] || key;
+        if (!currentTranslations) return key;
+        let text = currentTranslations[key];
+
+        if (!text) {
+            console.warn(`Missing translation key: ${key}`);
+            return key;
+        }
 
         if (variables) {
             for (const variable in variables) {
-                text = text.replace(`{${variable}}`, variables[variable]);
+                text = text.replace(`{${variable}}`, String(variables[variable]));
             }
         }
 

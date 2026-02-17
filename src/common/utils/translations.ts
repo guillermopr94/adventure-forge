@@ -42,6 +42,7 @@ const translations = {
         pollinations_token_label: "Pollinations Token",
         new_adventure: "New Adventure",
         continue_adventure: "Continue Adventure",
+        game_loading: "Forging your destiny...",
     },
     es: {
         welcome: "Bienvenido a AdventureForge",
@@ -64,6 +65,7 @@ const translations = {
         romance: "un universo de drama romántico",
         play: "Comenzar Aventura",
         loadingText: "Forjando tu destino...",
+        game_loading: "Forjando tu destino...",
         reset: "Nueva Aventura",
         select_genre: "Elige tu Aventura",
         visualizing_scene: "Visualizando escena...",

@@ -528,7 +528,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
       </div>
 
       <div className="spinner" style={{ display: isProcessing && !currentImage && !isImageMissing ? 'block' : 'none' }}>
-        {t('loadingText')}
+        {t('game_loading')}
       </div>
 
       <div id="options" data-testid="game-options-container" className={areOptionsVisible && !isProcessing ? "fade-in-up" : ""} style={{ display: (areOptionsVisible && !isProcessing) ? 'flex' : 'none' }}>
