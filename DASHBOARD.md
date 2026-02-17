@@ -10,10 +10,10 @@
 
 | Priority | Frontend | Backend | Total |
 |----------|----------|---------|-------|
-| **P0** (Critical) | 1 | 2 | **3** |
-| **P1** (High) | 10 | 12 | **22** |
+| **P0** (Critical) | 0 | 2 | **2** |
+| **P1** (High) | 11 | 13 | **24** |
 | **P2** (Medium) | 25 | 15 | **40** |
-| **TOTAL** | **36** | **29** | **65** |
+| **TOTAL** | **36** | **30** | **66** |
 
 ---
 
@@ -33,11 +33,12 @@
 
 ### 2. [P0] [BUG] Sync currentOptions State (FE #87)
 **Impact:** Buttons are not updating correctly with Gemini's response, breaking the gameplay loop.
+**Status:** ✅ RESOLVED (2026-02-17)
 **Acceptance Criteria:**
 - Refactor buffer handling in `useGameStream` to avoid JSON fragmentation
 - Ensure `currentOptions` reflects latest AI choice at all times
 
-**Action:** REFACTOR FE STATE LOGIC
+**Action:** REFACTOR FE STATE LOGIC (Completed)
 
 ---
 
@@ -71,25 +72,57 @@
 
 ---
 
+### 6. [P1] [INFRA] Local GPU Image Generation (Issue #111)
+**Impact:** Zero cost image generation, higher quality (SDXL/Flux), and faster iterations using local RTX 3060.
+**Status:** ✅ OPERATIONAL. Tunnel active and connected to Render.
+**Acceptance Criteria:**
+- Local inference server running on local machine (SDXL-Lightning)
+- Secure tunnel exposing API to Render backend (Cloudflare Tunnel)
+- Backend strategy prioritizing Local GPU
+
+**Action:** MONITOR STABILITY
+
+---
+
+### 7. [P1] [QA] Robust PR Validation Pipeline (Issue #112)
+**Impact:** Prevents regressions and broken builds from reaching `main`.
+**Acceptance Criteria:**
+- PR Verify includes: Linting, Type Checking, Unit Tests, and E2E Smoke Tests.
+- Mandatory status checks enabled on GitHub for both repos.
+- Automated "Test Summary" posted on every PR.
+
+**Action:** HARDEN GITHUB ACTIONS WORKFLOWS
+
+---
+
+### 8. [P1] [TEST] Full App E2E Coverage (Playwright) (Issue #113)
+**Impact:** Verifies every user journey is functional before deployment.
+**Acceptance Criteria:**
+- Tests for: Adventure Selection, Settings (Language/Theme), and Game Loop.
+- Integration tests with mocked AI responses for deterministic CI runs.
+- Visual regression snapshots for critical UI components.
+
+**Action:** EXPAND PLAYWRIGHT TEST SUITE
+
+---
+
 ## 🔥 BLOCKERS
 
-- **FE #108**: Translation key leak (`visualizing_scene`) in Production. Needs merge of `fix/option-buttons-react-state`.
+None.
 
 ---
 
 ## 📈 SPRINT PROGRESS (Current)
 
 **Sprint Goal:** Stability + Mobile UX foundation + Guest Play  
-**Burn Rate:** ~82% complete ⚡
+**Burn Rate:** ~85% complete ⚡
 
 ### Recently Completed:
 - ✅ **BE #80**: Conditional AI Key Fallback (Hardened server security)
 - ✅ **BE #110**: Guest Play Implementation (Public AI endpoints)
+- ✅ **FE #108**: Translation key leak fixed and merged to main
 - ✅ **CRON**: PR Manager now fixes builds automatically
-
-### In Progress:
-- ⏳ **FE #87**: currentOptions state sync
-- ⏳ **BE #1**: Backend context management
+- ✅ **SYSTEM**: Gateway restarted to fix latency issues
 
 ---
 

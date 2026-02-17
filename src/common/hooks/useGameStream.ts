@@ -79,20 +79,24 @@ export const useGameStream = (
                 buffer += chunk;
 
                 // Process buffer for SSE lines "data: {...}\n\n"
-                const lines = buffer.split('\n\n');
-                buffer = lines.pop() || ''; // Keep incomplete last chunk
+                // SSE chunks can be split by \r\n, \n, or \r. Standard is \n\n for message boundary.
+                let boundary = buffer.indexOf('\n\n');
+                while (boundary !== -1) {
+                    const line = buffer.substring(0, boundary).trim();
+                    buffer = buffer.substring(boundary + 2);
 
-                for (const line of lines) {
                     if (line.startsWith('data: ')) {
                         try {
                             const jsonStr = line.replace('data: ', '').trim();
-                            if (!jsonStr) continue;
-                            const event = JSON.parse(jsonStr) as StreamEvent;
-                            if (onEventRef.current) onEventRef.current(event);
+                            if (jsonStr) {
+                                const event = JSON.parse(jsonStr) as StreamEvent;
+                                if (onEventRef.current) onEventRef.current(event);
+                            }
                         } catch (e) {
-                            console.warn("Failed to parse SSE JSON:", line);
+                            console.warn("Failed to parse SSE JSON:", line, e);
                         }
                     }
+                    boundary = buffer.indexOf('\n\n');
                 }
             }
 

@@ -226,7 +226,12 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             setCinematicSegments(newSegments);
             setCurrentSegmentIndex(0);
             currentSentenceIndexRef.current = 0;
-            if (event.options) updateOptionButtons(event.options);
+            
+            // Reflected in buttons immediately
+            if (event.options) {
+              console.log("Updating options from event:", event.options);
+              updateOptionButtons(event.options);
+            }
 
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
             setGameHistory(prev => {
@@ -382,7 +387,12 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             setCinematicSegments(newSegments);
             setCurrentSegmentIndex(0);
             currentSentenceIndexRef.current = 0;
-            if (event.options) updateOptionButtons(event.options);
+            
+            if (event.options) {
+              console.log("Updating options from start event:", event.options);
+              updateOptionButtons(event.options);
+            }
+
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
             setGameHistory(prev => {
               const last = prev[prev.length - 1];
