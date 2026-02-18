@@ -1,5 +1,28 @@
 # Adventure Forge Logbook
 
+## [2026-02-19 01:10] AEP Turn - Atomic SSE Reassembly & JSON Robustness
+**Issue:** #121 - [P0] [STABILITY] Implement Atomic SSE Message Reassembly
+**Status:** ✅ Completed
+**Commit:** `Built with CHATYI`
+
+### Context
+Previous SSE logic in `useGameStream.ts` was prone to JSON corruption if chunks were split mid-message or if multiple messages arrived in a single buffer read. This caused silent UI failures where options wouldn't update.
+
+### Technical Actions
+1. **Utility Creation (`sseUtils.ts`):**
+   - Created `processSSEBuffer` to handle message reassembly, multi-line SSE blocks, and partial chunk retention.
+2. **Hook Refactor (`useGameStream.ts`):**
+   - Migrated from inline buffer splitting to the centralized utility.
+   - Improved error logging for malformed JSON chunks without breaking the stream.
+3. **Validation Suite (`useGameStream.test.ts`):**
+   - Comprehensive unit tests for: split chunks, multiple messages, multi-line blocks, messy whitespace, and invalid JSON recovery.
+
+### Verification
+- ✅ **Frontend Build:** `npm run build` SUCCESS.
+- ✅ **Unit Tests:** 6/6 tests passed in `useGameStream.test.ts`.
+
+---
+
 ## [2026-02-17 13:50] AEP Turn - SSE Buffer & currentOptions Sync Fix
 **Issue:** #87 - [P0] [BUG] Sync currentOptions State (FE)
 **Status:** ✅ Completed

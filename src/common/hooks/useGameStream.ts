@@ -2,6 +2,8 @@ import { useState, useRef, useCallback } from 'react';
 import { config } from '../config/config';
 import { withRetry } from '../utils/resilience';
 
+import { processSSEBuffer } from './sseUtils';
+
 export interface StreamEvent {
     type: 'status' | 'text_structure' | 'image' | 'audio' | 'done' | 'error' | 'image_error';
     message?: string;
@@ -78,26 +80,9 @@ export const useGameStream = (
                 const chunk = decoder.decode(value, { stream: true });
                 buffer += chunk;
 
-                // Process buffer for SSE lines "data: {...}\n\n"
-                // SSE chunks can be split by \r\n, \n, or \r. Standard is \n\n for message boundary.
-                let boundary = buffer.indexOf('\n\n');
-                while (boundary !== -1) {
-                    const line = buffer.substring(0, boundary).trim();
-                    buffer = buffer.substring(boundary + 2);
-
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const jsonStr = line.replace('data: ', '').trim();
-                            if (jsonStr) {
-                                const event = JSON.parse(jsonStr) as StreamEvent;
-                                if (onEventRef.current) onEventRef.current(event);
-                            }
-                        } catch (e) {
-                            console.warn("Failed to parse SSE JSON:", line, e);
-                        }
-                    }
-                    boundary = buffer.indexOf('\n\n');
-                }
+                buffer = processSSEBuffer(buffer, (event) => {
+                    if (onEventRef.current) onEventRef.current(event);
+                });
             }
 
         } catch (e: any) {
