@@ -2,17 +2,16 @@
 *Auto-updated by Pi (DSSO Protocol)*
 
 ## Last Commit
-- **Hash:** 620c785
-- **Message:** chore: sync project context [skip ci]
+- **Hash:** bf18da1
+- **Message:** chore: add PIV management files
 - **Branch:** main
 - **When:** 2026-02-18
 
 ## Recent Changes
+- bf18da1: chore: add PIV management files
+- 2212446: chore: add PIV management files (Build)
 - 620c785: chore: sync project context [skip ci]
 - 6fd6d8b: fix(game): fix translation keys and clean up local changes before context sync
-- 317c778: fix(game): refactor SSE buffer and sync currentOptions state (FE #87)
-- 83fbb2d: chore: sync project context [skip ci]
-- 33d2f7b: docs: resolve conflict in Logbook.md
 
 ## Current Focus
 Stability and UX synchronization. Specifically addressing the P0 issue where `currentOptions` were not correctly reflected in the UI during streaming.
