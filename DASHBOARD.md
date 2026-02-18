@@ -29,7 +29,7 @@
 ### 1. [P0] [BUG] Sync currentOptions State (Issue #87, #92, #93, #94)
 **Impact:** Gameplay loop breakage; users see placeholder options instead of AI choices.  
 **Acceptance Criteria:**
-- **#92**: Atomic Stream Event Handling & JSON Robustness.
+- **#92**: Atomic Stream Event Handling & JSON Robustness. [ANALYSIS DONE: #122]
 - **#93**: Reactive Option State Subscription in Game View.
 - **#94**: Dynamic Option Buttons & Touch-Friendly Layout.
 - **Goal**: Option buttons update immediately with AI content, no placeholders.
@@ -49,7 +49,7 @@
 **Impact:** North Star mobile goal. Essential for touch-screen play.  
 **Acceptance Criteria:**
 - **#99**: Touch targets >= 44px.
-- **#100**: Bottom Sheet Layout for narrative text on small screens.
+- **#100**: Bottom Sheet Layout for narrative text on small screens. [ANALYSIS DONE: #123]
 - **Goal**: Fluid, readable experience on iPhone SE to iPhone 15 viewports.
 
 ---
