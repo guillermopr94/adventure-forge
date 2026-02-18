@@ -1,10 +1,12 @@
 export interface Translations {
-    [language: string]: {
-        [key: string]: string;
-    };
+    [key: string]: string;
 }
 
-const translations = {
+export interface LanguageBundles {
+    [language: string]: Translations;
+}
+
+const translations: LanguageBundles = {
     en: {
         welcome: "Welcome to AdventureForge",
         game_history_content:
@@ -43,6 +45,9 @@ const translations = {
         new_adventure: "New Adventure",
         continue_adventure: "Continue Adventure",
         game_loading: "Forging your destiny...",
+        session_expired: "Session Expired",
+        please_login: "Please log in again to continue your adventure.",
+        ok: "OK",
     },
     es: {
         welcome: "Bienvenido a AdventureForge",
@@ -82,6 +87,9 @@ const translations = {
         pollinations_token_label: "Token de Pollinations",
         new_adventure: "Nueva Aventura",
         continue_adventure: "Continuar Aventura",
+        session_expired: "Sesión Expirada",
+        please_login: "Por favor, inicia sesión de nuevo para continuar tu aventura.",
+        ok: "Aceptar",
     },
 };
 

@@ -35,12 +35,20 @@ export function useTranslation() {
     }, [language]);
 
     const t = (key: string, variables?: { [key: string]: any }) => {
-        if (!currentTranslations) return key;
+        if (!currentTranslations) {
+            console.error(`Translation bundle not loaded for language: ${language}`);
+            return key;
+        }
         let text = currentTranslations[key];
 
         if (!text) {
-            console.warn(`Missing translation key: ${key}`);
-            return key;
+            console.warn(`Missing translation key: ${key} in language: ${language}`);
+            // Fallback to English if not Spanish
+            if (language !== 'en' && translations['en'][key]) {
+                text = translations['en'][key];
+            } else {
+                return key;
+            }
         }
 
         if (variables) {
