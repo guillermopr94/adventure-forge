@@ -2,11 +2,9 @@ export interface Translations {
     [key: string]: string;
 }
 
-export interface LanguageBundles {
-    [language: string]: Translations;
-}
+export type Language = 'en' | 'es';
 
-const translations: LanguageBundles = {
+export const languageBundles: Record<Language, Translations> = {
     en: {
         welcome: "Welcome to AdventureForge",
         game_history_content:
@@ -93,4 +91,4 @@ const translations: LanguageBundles = {
     },
 };
 
-export default translations;
+export default languageBundles;

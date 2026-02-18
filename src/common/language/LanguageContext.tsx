@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import translations from '../utils/translations';
+import languageBundles, { Language } from '../utils/translations';
 
 const LanguageContext = createContext<{
     language: string;
@@ -28,26 +28,27 @@ export const LanguageProvider: React.FC<React.PropsWithChildren<{}>> = ({ childr
 // Crea un hook personalizado llamado "useTranslation"
 export function useTranslation() {
     const { language, setLanguage } = useContext(LanguageContext);
-    const [currentTranslations, setCurrentTranslations] = useState(translations[language]);
+    const [currentTranslations, setCurrentTranslations] = useState(languageBundles[language as Language]);
 
     useEffect(() => {
-        setCurrentTranslations(translations[language]);
+        setCurrentTranslations(languageBundles[language as Language]);
     }, [language]);
 
     const t = (key: string, variables?: { [key: string]: any }) => {
         if (!currentTranslations) {
             console.error(`Translation bundle not loaded for language: ${language}`);
-            return key;
+            return `[MISSING BUNDLE: ${language}] ${key}`;
         }
+        
         let text = currentTranslations[key];
 
         if (!text) {
             console.warn(`Missing translation key: ${key} in language: ${language}`);
-            // Fallback to English if not Spanish
-            if (language !== 'en' && translations['en'][key]) {
-                text = translations['en'][key];
+            // Fallback to English if not English
+            if (language !== 'en' && languageBundles['en'][key]) {
+                text = languageBundles['en'][key];
             } else {
-                return key;
+                return `[MISSING: ${key}]`;
             }
         }
 
