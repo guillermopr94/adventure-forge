@@ -49,6 +49,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
   const [gameHistory, setGameHistory] = useState<any[]>(savedGameState ? savedGameState.gameHistory : []);
   const [currentOptions, setCurrentOptions] = useState<string[]>(savedGameState?.currentOptions || []);
   const [areOptionsVisible, setAreOptionsVisible] = useState(false);
+  const [isOptionsLoading, setIsOptionsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGameStarted, setIsGameStarted] = useState(!!savedGameState);
 
@@ -203,6 +204,10 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
 
   async function sendChoice(choiceIndex: number) {
     toggleOptions(false);
+    // #130: Clear stale options immediately so buttons don't show previous turn's choices
+    setCurrentOptions([]);
+    // #131: Signal loading state for options panel
+    setIsOptionsLoading(true);
     setIsProcessing(true);
     setCurrentImage(null);
     setIsImageMissing(false);
@@ -227,10 +232,11 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             setCurrentSegmentIndex(0);
             currentSentenceIndexRef.current = 0;
             
-            // Reflected in buttons immediately
-            if (event.options) {
-              console.log("Updating options from event:", event.options);
+            // #130: Immediately update options from stream event (no placeholders)
+            if (event.options && event.options.length > 0) {
               updateOptionButtons(event.options);
+              // #131: Options data received, clear loading state
+              setIsOptionsLoading(false);
             }
 
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
@@ -266,6 +272,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
         else if (event.type === 'error') {
           toast.error(`Stream Error: ${event.error}`);
           setIsProcessing(false);
+          setIsOptionsLoading(false);
         }
       },
       savedGameState?._id
@@ -294,6 +301,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
       setCurrentSegmentIndex(nextIndex);
       currentSentenceIndexRef.current = 0;
     } else {
+      // #131: Show options; if still loading (stream delayed), isOptionsLoading stays true
       setAreOptionsVisible(true);
       setIsProcessing(false);
     }
@@ -388,9 +396,11 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             setCurrentSegmentIndex(0);
             currentSentenceIndexRef.current = 0;
             
-            if (event.options) {
-              console.log("Updating options from start event:", event.options);
+            // #130: Update options immediately from stream event
+            if (event.options && event.options.length > 0) {
               updateOptionButtons(event.options);
+              // #131: Options data received, clear loading state
+              setIsOptionsLoading(false);
             }
 
             const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
@@ -424,6 +434,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
         else if (event.type === 'error') {
           toast.error(`Stream Error: ${event.error}`);
           setIsProcessing(false);
+          setIsOptionsLoading(false);
         }
       },
       savedGameState?._id
@@ -531,11 +542,34 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
         {t('game_loading')}
       </div>
 
-      <div id="options" data-testid="game-options-container" className={areOptionsVisible && !isProcessing ? "fade-in-up" : ""} style={{ display: (areOptionsVisible && !isProcessing) ? 'flex' : 'none' }}>
-        <p className="choose-instruction fade-in-delayed">{t("choose_option")}</p>
-        <button onClick={() => sendChoice(1)} disabled={!currentOptions[0]}>{currentOptions[0] || "Option 1"}</button>
-        <button onClick={() => sendChoice(2)} disabled={!currentOptions[1]}>{currentOptions[1] || "Option 2"}</button>
-        <button onClick={() => sendChoice(3)} disabled={!currentOptions[2]}>{currentOptions[2] || "Option 3"}</button>
+      <div
+        id="options"
+        data-testid="game-options-container"
+        className={areOptionsVisible && !isProcessing ? "fade-in-up" : ""}
+        style={{ display: (areOptionsVisible && !isProcessing) ? 'flex' : 'none' }}
+      >
+        {isOptionsLoading ? (
+          /* #131: Loading skeleton while waiting for AI options */
+          <div className="options-loading-skeleton" data-testid="options-loading">
+            <div className="option-skeleton"></div>
+            <div className="option-skeleton"></div>
+            <div className="option-skeleton"></div>
+          </div>
+        ) : (
+          <>
+            <p className="choose-instruction fade-in-delayed">{t("choose_option")}</p>
+            {/* #130: currentOptions is always populated from stream before buttons show */}
+            <button onClick={() => sendChoice(1)} disabled={!currentOptions[0]}>
+              {currentOptions[0] || t("choose_option")}
+            </button>
+            <button onClick={() => sendChoice(2)} disabled={!currentOptions[1]}>
+              {currentOptions[1] || t("choose_option")}
+            </button>
+            <button onClick={() => sendChoice(3)} disabled={!currentOptions[2]}>
+              {currentOptions[2] || t("choose_option")}
+            </button>
+          </>
+        )}
       </div>
 
       {user && (

@@ -76,4 +76,19 @@ describe('SSE Buffer Processing Logic (sseUtils)', () => {
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
+
+  it('should handle partial "data:" lines correctly', () => {
+    let events: any[] = [];
+    let buffer = 'data: {"type": "status"}\n\nda'; // split "data:"
+    
+    buffer = processSSEBuffer(buffer, (e) => events.push(e));
+    expect(events).toHaveLength(1);
+    expect(buffer).toBe('da');
+
+    buffer += 'ta: {"type": "done"}\n\n';
+    buffer = processSSEBuffer(buffer, (e) => events.push(e));
+    expect(events).toHaveLength(2);
+    expect(events[1].type).toBe('done');
+    expect(buffer).toBe('');
+  });
 });
