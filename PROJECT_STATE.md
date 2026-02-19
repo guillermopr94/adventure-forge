@@ -1,33 +1,49 @@
 # Project State (Adventure Forge - Frontend)
-*Auto-updated by Pi (DSSO Protocol)*
+*Auto-updated by CHATYI (SPTA Protocol)*
 
 ## Last Commit
-- **Hash:** fa24a93
-- **Message:** chore: update workflow for phase 1 completion
-- **Branch:** main
-- **When:** 2026-02-18
+- **Hash:** f60489d
+- **Message:** fix(game): resolve P0 option button placeholders and add loading skeleton
+- **Branch:** fix/93-options-loading-state-and-i18n-tests
+- **When:** 2026-02-19
 
-## Recent Changes
-- dc459d7: chore: update PROJECT_STATE.md after PR check (2026-02-18)
-- fa24a93: chore: update workflow for phase 1 completion (2026-02-18)
-- 160f354: chore: sync project context [skip ci] (2026-02-18)
-- 2d55bf0: fix(i18n): eliminate translation keys leak and enhance robustness (2026-02-18)
-- 70e7eaf: chore: sync project context [skip ci] (2026-02-18)
+## Open PRs
+- **PR #132** - fix(game): P0 option button placeholders & loading skeleton (#130, #131, #129) — **PENDING MERGE**
 
-## Current Focus
-Resolution of P0 bugs related to i18n leakage and synchronization of `currentOptions` state. Transitioning codebase to a more robust translation handling pattern.
+## Technical Architect Findings (SPTA - 2026-02-19)
+- **Build Status:** ✅ SUCCESS (npm run build — code 0)
+- **ESLint:** ⚠️ 4 pre-existing warnings (no regressions):
+  - `resetGame` defined but unused (Game.tsx L367)
+  - Missing `initializeGame` dep in useEffect (Game.tsx L452)
+  - Missing `displayedText` dep in useEffect (Typewriter.tsx L80)
+  - Missing `checkSave` dep in useEffect (MainMenu.tsx L24)
+- **Bundle:** 76.15 kB (gzip) — within healthy range
 
-## Technical Architect Findings (SPTA - 2026-02-18)
-- **Build Status:** Backend SUCCESS. Frontend TIMEOUT (Resource heavy).
-- **Findings:**
-    - BE #72: Resource Spiking (Parallel generation of Image + Multi-sentence Audio for all paragraphs simultaneously risks 429s).
-    - FE #87: Game History State Desync (Manual history updates vs stream-internal updates risk duplicate entries).
-    - FE #88: Voice Load Blocking (voicesLoaded flag might block UI on mobile if WebSpeech fails to init).
-    - BE #71: Data Persistence vs Auth Mismatch (Guest users lack persistent progress).
+### 🔴 New Issues Created This Session
+
+| # | Title | Priority |
+|---|-------|----------|
+| #133 | [STABILITY] Missing React Error Boundary (blank screen on crash) | P1 |
+| #134 | [PERFORMANCE] new Image() object leak in sendChoice handler | P2 |
+| #135 | [SECURITY] API keys exposed in every HTTP request header | P1 |
+
+### Existing Critical Issues
+- **#121** [P0] Atomic SSE Message Reassembly
+- **#120/#104/#105** [P0] Auth Error Handling cluster
+- **#123** [P0] Mobile-First Bottom Sheet Narrative
+- **#109** [P1] Migrate from CRA to Vite
+- **#117/#118** [P1] Decompose Game.tsx God Component (21KB)
+- **#106** [P1] AbortController in useSmartAudio
 
 ## Suggested Next Steps
-1. BE #72: Refactor `GameService.streamTurn` to use limited concurrency (e.g., `p-limit`) for asset generation.
-2. FE #87: Migrate `Game.tsx` state to `useReducer` to ensure atomic updates to `gameHistory`.
-3. FE #88: Implement a 3-second timeout for `voicesLoaded` to allow manual bypass.
-4. Address #92: Implement atomic SSE buffer processing.
+1. **Merge PR #132** — resolves P0 options bug cluster (#130, #131, #129)
+2. **#133** Add React Error Boundary (P1 stability, ~1h)
+3. **#104/#105** Auth Error Modal cluster (P0 UX)
+4. **#123** Mobile Bottom Sheet (P0 UX North Star)
+5. **#113-116** Vite Migration (P1 dev stability)
 
+## Technical State
+- Build: ✅ SUCCESS
+- ESLint: Pre-existing warnings only (no regressions)
+- Branch: fix/93-options-loading-state-and-i18n-tests (PR #132 open)
+- Game.tsx: 21KB god component — decomposition tracked in #117/#118
