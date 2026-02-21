@@ -1,96 +1,63 @@
-# Project State (Adventure Forge - Frontend)
-*Auto-updated by CHATYI (PR Manager Protocol)*
+# Project State
+
+*Auto-updated by [project-context-sync](https://github.com/clawdbot/skills/project-context-sync)*  
+*Last updated: 2026-02-21 20:53:00*
+
+---
 
 ## Last Commit
-- **Hash:** dd9a552
-- **Message:** feat(ux): Implement StreamErrorState component for error recovery (#146) (#151)
+
+- **Hash:** 892fc6c
+- **Message:** feat(stream): integrate error handling and abort support in useGameStream (#147)
 - **Branch:** main
-- **When:** 2026-02-21 16:32:25 +0100
-- **Author:** Guillermo Pérez Ruiz (via PR #151 merge)
+- **Author:** Guillermo Pérez Ruiz
+- **When:** 2026-02-21 20:49:58 +0100
+- **Files changed:** 2
+
+**Changed files:**
+```
+src/common/hooks/useGameStream.ts
+src/views/Game/Game.tsx
+```
 
 ## Recent Changes
-- dd9a552: feat(ux): Implement StreamErrorState component (#151) — ✅ MERGED
+
+- 892fc6c: feat(stream): integrate error handling and abort support in useGameStream (#147)
+- ea841a9: feat(ux): polish mobile layout, unify loading state and screen transitions
+- c08323f: chore: sync PROJECT_STATE after PR #151 merge [skip ci]
+- dd9a552: feat(ux): Implement StreamErrorState component for error recovery (#146) (#151)
 - 2795b71: chore: update PROJECT_STATE after AEP Protocol execution [skip ci]
-- d1b0c34: feat(game): implement React Error Boundary (#133)
-- 7c3f668: fix(config): update production API fallback URL
-- 31e8fee: chore: sync project context after PR #132 merge [skip ci]
 
-## Open PRs
-- 🟢 **0 PRs open** — Clean backlog
+## Current Focus
 
-## Technical Architect Audit (SPTA - 2026-02-21 16:25 CET)
-**Build Status:** ✅ SUCCESS
-- Bundle: 76.54 kB gzipped (main.ccefa05c.js)
-- CSS: 3.96 kB (main.6fcda016.css)
-- ESLint: 13 warnings (pre-existing, tracked)
+**Error Recovery & Stream Stability** — The frontend is actively implementing comprehensive error handling for game streaming. Recent work integrated `AbortController` for cancelling stale requests, `StreamErrorState` component for user-facing error recovery, and AUTH_ERROR detection (401/403) in `useGameStream`. Mobile UX polish and screen transitions have also been completed.
 
-**Code Analysis:**
-- ✅ **Build Stability:** Clean production build, no regressions
-- ⚠️ **Game.tsx God Component:** 21KB, 589 lines — documented in #117/#118
-- ⚠️ **API Key Security:** Keys exposed in request headers — documented in #135 (P1)
-- ⚠️ **Stream Resilience:** No AbortController in useGameStream — documented in #36/#86
-- ✅ **Error Handling:** React Error Boundary implemented (#133), StreamErrorState in PR #151
+## Suggested Next Steps
 
-**ESLint Warnings (13):**
-- BackgroundMusic.tsx (1): Missing `musicVolume` dep in useEffect
-- TextNarrator.tsx (1): Missing `sfxVolume` and `speak` deps in useEffect
-- Game.tsx (9): Unused vars + missing deps in useEffect/useCallback
-- Typewriter.tsx (1): Missing `displayedText` dep in useEffect
-- MainMenu.tsx (1): Missing `checkSave` dep in useEffect
+- **#148 [P0]** — Integrate StreamErrorState component into GameView UI
+- **#145 [P0]** — Implement dynamic environment-based API config (fix production localhost:3001 issue)
+- **#150 [P1]** — Refactor frontend to use session tokens (security enhancement)
+- Continue testing error recovery flows in production (Vercel)
+- Monitor E2E test stability after recent stream changes
 
-**Architecture Quality:** 🟡 MODERATE
-- Patterns: React hooks, context API, service layer
-- Issues: God components, prop drilling, tight coupling in Game.tsx
-- Security: API keys in headers (client-side exposure risk)
-- Performance: Bundle size acceptable, but CRA build slower than Vite
+## Open Pull Requests
 
-### 🔴 Critical Issues (P0) — 15 Open
+**Status:** ✅ No open PRs (all branches merged)
 
-| # | Title | Impact |
-|---|-------|--------|
-| #146 | StreamErrorState Component | ✅ MERGED via #151 (dd9a552) |
-| #147 | Integrate Error Handling in useGameStream | ✅ Unblocked (component ready) |
-| #148 | UI Integration in GameView | Blocked by #147 |
-| #145 | Dynamic Environment-Based API Config | Partial fix (7c3f668) |
-| #136 | Production API URL localhost:3001 | ⚠️ CRITICAL — Game broken in prod |
-| #137 | Stream failure infinite loading | Root issue → #146-#148 |
-| #127 | missingTranslationHandler i18n config | i18n crashes |
-| #128 | English Fallback in useTranslation | i18n crashes |
-| #126 | Integrate Auth Error Modal | UX blocked |
-| #125 | Return to Menu button in Auth Modal | UX blocked |
-| #124 | Retry Connection button in Auth Modal | UX blocked |
-| #123 | Mobile-First Bottom Sheet Narrative | North Star UX |
-| #122 | Atomic Stream Event Handling | JSON robustness |
-| #121 | Atomic SSE Message Reassembly | Stream stability |
-| #120 | Session Expired Modal buttons | Auth UX |
-| #119 | i18n Resilience & Fallback Support | i18n crashes |
+## CI/CD Status
 
-### 🟡 High Priority (P1) — 7 Open
+**Latest Run:** ✅ SUCCESS (E2E Tests - main branch)
+- Run ID: 22263219203
+- Duration: 3m17s
+- Triggered: 2026-02-21 20:50:05 +0100
 
-| # | Title |
-|---|-------|
-| #150 | Refactor Frontend to Use Session Tokens |
-| #141 | Carousel navigation arrows 13px font-size |
-| #140 | Redundant page title on Adventure Selection |
-| #139 | Google Sign-In button 40px (WCAG 44px minimum) |
-| #138 | Game loading container off-theme dark-gray |
-| #135 | User API keys exposed in every HTTP request |
-| #133 | Missing React Error Boundary (✅ MERGED) |
-| #118 | Decompose God Component: Game.tsx |
+## Backlog Overview
 
-## Suggested Next Steps (Prioritized by PR Manager)
-1. **#147 [P0] Integrate Error Handling in useGameStream** — ✅ Component ready (dd9a552)
-2. **#136 [P0] Fix Production API URL** — Deploy blocker, highest severity
-3. **#148 [P0] UI Integration in GameView** — Blocked by #147, then ready
-4. **#127/#128 i18n Fallback** — Prevents crash on missing translations
-5. **#124-#126 Auth Modal Cluster** — Complete UX for expired sessions
-6. **#135 [P1 SECURITY] API Key Exposure** — Migrate to session tokens (#150)
-7. **#123 [P0] Mobile Bottom Sheet** — North Star UX improvement
+**Total Issues:** 29 open (15 P0, 7 P1, 7 P2)
 
-## Technical State
-- Build: ✅ SUCCESS (StreamErrorState component integrated)
-- Main: dd9a552 (PR #151 merged - Error recovery UI)
-- Open PRs: 0 (clean backlog)
-- Open Issues: 29 (15 P0, 7 P1, 7 P2)
-- Backend: guillermopr94/adventure-forge-api (0 PRs open)
-- Last PR Manager Audit: 2026-02-21 16:32 CET
+**Top Priorities:**
+1. **#148** [P0][UX] — UI Integration of StreamErrorState
+2. **#145** [P0][BUG] — Dynamic Environment API Config
+3. **#147** [P0][UX] — ✅ MERGED (useGameStream error handling)
+4. **#150** [P1][SECURITY] — Session Token Refactor
+5. **#149** [TECH DEBT] — Fix React Hook dependency warnings
