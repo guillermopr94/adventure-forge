@@ -1,6 +1,6 @@
 # 🎯 Adventure Forge - Sprint Dashboard
 
-**Last Updated:** 2026-02-19 00:35 CET  
+**Last Updated:** 2026-02-21 21:40 CET  
 **Phase:** MVP Foundation (Q1 2026)  
 **Sprint Theme:** "Stability + Performance + Developer Experience"
 
@@ -10,21 +10,30 @@
 
 | Priority | Total Issues |
 |----------|--------------|
-| **P0** (Critical) | 15 |
+| **P0** (Critical) | 17 (+2 NEW) |
 | **P1** (High) | 22 |
 | **P2** (Medium) | 48 |
-| **TOTAL OPEN** | **85** |
+| **TOTAL OPEN** | **87** |
 
 **Category Breakdown (Est.):**
-- 🐛 **Bugs:** 16
+- 🐛 **Bugs:** 18 (+2)
 - ✨ **Enhancements:** 24
 - ⚙️ **Tech Debt / Refactor:** 24
 - 🏗️ **Infrastructure:** 10
-- 🧪 **Testing:** 6
+- 🧪 **Testing:** 7 (+1)
 
 ---
 
 ## 🚨 TOP 5 CRITICAL PRIORITIES
+
+### 0. [P0] [BUG] Audio Endpoint 401 for Guest Users (Issue #152) **🆕 URGENT**
+**Impact:** Audio completely broken for unauthenticated users in production.  
+**Acceptance Criteria:**
+- ✅ **BE #107**: Remove AuthGuard from AI endpoints. [BREAKDOWN DONE]
+- **FE #154**: Validate audio works for guests after backend deploy. [BREAKDOWN DONE]
+- **Goal**: Guest users can hear audio narration without 401 errors.
+
+---
 
 ### 1. [P0] [BUG] Sync currentOptions State (Issue #87, #92, #93, #121, #122)
 **Impact:** Gameplay loop breakage; users see placeholder options instead of AI choices.  
