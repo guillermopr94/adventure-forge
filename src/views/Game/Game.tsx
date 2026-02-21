@@ -51,6 +51,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
   const [areOptionsVisible, setAreOptionsVisible] = useState(false);
   const [isOptionsLoading, setIsOptionsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isInitialTurnLoading, setIsInitialTurnLoading] = useState(false);
   const [isGameStarted, setIsGameStarted] = useState(!!savedGameState);
 
   // Cinematic Overlay State
@@ -209,8 +210,10 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     // #131: Signal loading state for options panel
     setIsOptionsLoading(true);
     setIsProcessing(true);
+    setIsInitialTurnLoading(true);
     setCurrentImage(null);
     setIsImageMissing(false);
+    setImageError(false);
 
     const choiceText = currentOptions[choiceIndex - 1] || `Option ${choiceIndex}`;
     const prompt = `I choose option ${choiceIndex}: ${choiceText}. What happens next?`;
@@ -247,6 +250,11 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
               }
               return [...prev, { role: 'model', parts: [{ text: fullText }] }];
             });
+
+            // If we have text but no image yet, we might still want to wait a bit 
+            // for the first image to avoid the "ghosting" effect Guillermo mentioned.
+            // However, to keep it snappy, we'll allow text to start if it takes too long.
+            setTimeout(() => setIsInitialTurnLoading(false), 2000);
           }
         }
         else if (event.type === 'image') {
@@ -261,6 +269,8 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             if (event.index === currentSegmentIndex) {
               setCurrentImage(event.data);
               setIsImageMissing(false);
+              // First image arrived! Clear the initial loading screen
+              if (event.index === 0) setIsInitialTurnLoading(false);
             }
           }
         }
@@ -375,6 +385,10 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
 
   async function startGame() {
     setIsGameStarted(true);
+    setIsInitialTurnLoading(true);
+    setCurrentImage(null);
+    setIsImageMissing(false);
+    setImageError(false);
     setGameHistory([]);
 
     const introPrompt = `${t("intro_prompt", { gameType: gameType })}`;
@@ -411,6 +425,9 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
               }
               return [...prev, { role: 'model', parts: [{ text: fullText }] }];
             });
+
+            // If we have text but no image yet, wait a bit
+            setTimeout(() => setIsInitialTurnLoading(false), 2000);
           }
         }
         else if (event.type === 'image') {
@@ -425,6 +442,8 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             if (event.index === currentSegmentIndex) {
               setCurrentImage(event.data);
               setIsImageMissing(false);
+              // First image arrived! Clear the initial loading screen
+              if (event.index === 0) setIsInitialTurnLoading(false);
             }
           }
         }
@@ -479,98 +498,90 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
       <Toaster position="top-right" />
       <BackgroundMusic audioFile={audioFile} />
 
-      {((voicesLoaded || !!audioData) && currentSentence !== "") && (
-        <TextNarrator
-          text={currentSentence}
-          voice={selectedVoice}
-          audioData={audioData}
-          isLoadingAudio={isLoadingAudio}
-          onComplete={() => {
-            // Auto-advance disabled for manual control
-            // onAudioComplete(); 
-          }}
-        />
-      )}
-
-      <div
-        className="game-image-container fade-in"
-        data-testid="game-cinematic-container"
-        onClick={() => {
-          // Manual Advance Logic: 
-          // 1. If overlay is visible (text shown), verify interaction is allowed
-          if (overlayVisible && !isProcessing && !areOptionsVisible) {
-            advanceSentence();
-          }
-        }}
-        style={{ cursor: (!isProcessing && !areOptionsVisible) ? 'pointer' : 'default' }}
-      >
-        {currentImage && !imageError ? (
-          <img 
-            src={currentImage} 
-            alt="Scene" 
-            className="game-scene-image" 
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div className="image-placeholder">
-             <div className="shimmer"></div>
-             <p className="placeholder-text">
-               {imageError ? (t('image_error') || "Image failed to load") : (t('visualizing_scene') || "Visualizing scene...")}
-             </p>
-          </div>
-        )}
-        {/* FIX #34: Fallback placeholder when image is missing */}
-        {isImageMissing && !currentImage && (
-          <div className="image-placeholder">
-            <div className="shimmer-effect"></div>
-            <p className="image-loading-text">🖼️ Generating scene...</p>
-          </div>
-        )}
-        <div className={`cinematic-text-overlay ${overlayVisible ? 'visible' : ''}`}>
-          <p>
-            <Typewriter 
-              text={currentSentence} 
-              isActive={overlayVisible} 
-              duration={currentSentence.length * 40}
-            />
-          </p>
-          <div className="click-hint">{t('click_to_advance') || "Click to advance ▶"}</div>
+      {isInitialTurnLoading ? (
+        <div className="spinner">
+          <p>{t('game_loading') || "Forging your destiny..."}</p>
         </div>
-      </div>
+      ) : (
+        <>
+          {((voicesLoaded || !!audioData) && currentSentence !== "") && (
+            <TextNarrator
+              text={currentSentence}
+              voice={selectedVoice}
+              audioData={audioData}
+              isLoadingAudio={isLoadingAudio}
+            />
+          )}
 
-      <div className="spinner" style={{ display: isProcessing && !currentImage && !isImageMissing ? 'block' : 'none' }}>
-        {t('game_loading')}
-      </div>
-
-      <div
-        id="options"
-        data-testid="game-options-container"
-        className={areOptionsVisible && !isProcessing ? "fade-in-up" : ""}
-        style={{ display: (areOptionsVisible && !isProcessing) ? 'flex' : 'none' }}
-      >
-        {isOptionsLoading ? (
-          /* #131: Loading skeleton while waiting for AI options */
-          <div className="options-loading-skeleton" data-testid="options-loading">
-            <div className="option-skeleton"></div>
-            <div className="option-skeleton"></div>
-            <div className="option-skeleton"></div>
+          <div
+            className="game-image-container fade-in"
+            data-testid="game-cinematic-container"
+            onClick={() => {
+              if (overlayVisible && !isProcessing && !areOptionsVisible) {
+                advanceSentence();
+              }
+            }}
+            style={{ cursor: (!isProcessing && !areOptionsVisible) ? 'pointer' : 'default' }}
+          >
+            {currentImage && !imageError ? (
+              <img 
+                src={currentImage} 
+                alt="Scene" 
+                className="game-scene-image" 
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="image-placeholder">
+                <div className="shimmer-effect"></div>
+                <p className="placeholder-text">
+                  {imageError 
+                    ? (t('image_error') || "Image failed to load") 
+                    : (t('visualizing_scene') || "Visualizing scene...")}
+                </p>
+              </div>
+            )}
+            
+            <div className={`cinematic-text-overlay ${overlayVisible ? 'visible' : ''}`}>
+              <p>
+                <Typewriter 
+                  text={currentSentence} 
+                  isActive={overlayVisible} 
+                  duration={currentSentence.length * 40}
+                />
+              </p>
+              <div className="click-hint">{t('click_to_advance') || "Click to advance ▶"}</div>
+            </div>
           </div>
-        ) : (
-          <>
-            <p className="choose-instruction fade-in-delayed">{t("choose_option")}</p>
-            {/* #130: currentOptions is always populated from stream before buttons show */}
-            <button onClick={() => sendChoice(1)} disabled={!currentOptions[0]}>
-              {currentOptions[0] || t("choose_option")}
-            </button>
-            <button onClick={() => sendChoice(2)} disabled={!currentOptions[1]}>
-              {currentOptions[1] || t("choose_option")}
-            </button>
-            <button onClick={() => sendChoice(3)} disabled={!currentOptions[2]}>
-              {currentOptions[2] || t("choose_option")}
-            </button>
-          </>
-        )}
-      </div>
+
+          <div
+            id="options"
+            data-testid="game-options-container"
+            className={areOptionsVisible && !isProcessing ? "fade-in-up" : ""}
+            style={{ display: (areOptionsVisible && !isProcessing) ? 'flex' : 'none' }}
+          >
+            {isOptionsLoading ? (
+              <div className="options-loading-skeleton" data-testid="options-loading">
+                <div className="option-skeleton"></div>
+                <div className="option-skeleton"></div>
+                <div className="option-skeleton"></div>
+              </div>
+            ) : (
+              <>
+                <p className="choose-instruction fade-in-delayed">{t("choose_option")}</p>
+                <button onClick={() => sendChoice(1)} disabled={!currentOptions[0]}>
+                  {currentOptions[0] || t("choose_option")}
+                </button>
+                <button onClick={() => sendChoice(2)} disabled={!currentOptions[1]}>
+                  {currentOptions[1] || t("choose_option")}
+                </button>
+                <button onClick={() => sendChoice(3)} disabled={!currentOptions[2]}>
+                  {currentOptions[2] || t("choose_option")}
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
 
       {user && (
         <button onClick={handleSave} className="save-button" style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}>

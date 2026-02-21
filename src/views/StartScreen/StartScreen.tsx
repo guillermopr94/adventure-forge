@@ -15,6 +15,7 @@ import { IoSettingsSharp } from "react-icons/io5";
 
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from "../../common/contexts/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ... previous imports
 
@@ -73,22 +74,40 @@ const StartScreenContent = (): React.ReactElement => {
 
             <SettingsModal />
 
-            {currentScreen !== 'game' ? (
-                <div className="start-screen-container">
-                    <div id="welcome-message">{t("welcome")}</div>
-                    {currentScreen === 'main_menu' && <MainMenu />}
-                    {currentScreen === 'selection' && <AdventureSelectionScreen />}
-                </div>
-            ) : (
-                <Game
-                    key={gameKey} // Force remount on reset
-                    userToken={userToken}
-                    authToken={token}
-                    openaiKey={openaiKey}
-                    gameType={t(selectedGenre.id)}
-                    genreKey={selectedGenre.id}
-                />
-            )}
+            <AnimatePresence mode="wait">
+                {currentScreen !== 'game' ? (
+                    <motion.div 
+                        key="start-screen"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.5, ease: "easeInOut" }}
+                        className="start-screen-container"
+                    >
+                        <div id="welcome-message">{t("welcome")}</div>
+                        {currentScreen === 'main_menu' && <MainMenu />}
+                        {currentScreen === 'selection' && <AdventureSelectionScreen />}
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="game-screen"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.8 }}
+                        style={{ width: '100%', height: '100%' }}
+                    >
+                        <Game
+                            key={gameKey} // Force remount on reset
+                            userToken={userToken}
+                            authToken={token}
+                            openaiKey={openaiKey}
+                            gameType={t(selectedGenre.id)}
+                            genreKey={selectedGenre.id}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

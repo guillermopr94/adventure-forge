@@ -18,6 +18,23 @@
     max-width: 100%;
 }
 
+@media (max-width: 600px) {
+    .App {
+        padding: 0 0.5rem 1rem 0.5rem;
+    }
+    
+    .start-screen-container {
+        width: 100%;
+        padding: 0 10px;
+    }
+    
+    .token-form-container,
+    .genre-selection-carousel {
+        padding: 20px;
+        border-radius: 12px;
+    }
+}
+
 
 .settings-trigger-btn {
     position: fixed;
@@ -194,17 +211,32 @@ h3 {
 }
 
 .carousel-nav {
-    background: none;
-    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     color: var(--primary-color);
     cursor: pointer;
-    transition: transform 0.2s, color 0.2s;
+    transition: all 0.3s ease;
     z-index: 2;
+    backdrop-filter: blur(5px);
 }
 
 .carousel-nav:hover {
-    transform: scale(1.2);
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
     color: var(--secondary-color);
+}
+
+@media (max-width: 600px) {
+    .carousel-nav {
+        width: 50px;
+        height: 50px;
+    }
 }
 
 .selected-genre-display {

@@ -112,14 +112,27 @@ button:disabled {
 }
 
 @media screen and (max-width: 480px) {
-  #game-content>p {
-    font-size: 1.5rem;
-    padding: 1rem 0.5rem;
+  .game-container {
+    width: 100%;
+    padding: 5px; /* Minimal padding for edge-to-edge look */
+    box-sizing: border-box;
+  }
+
+  .game-image-container {
+    border-radius: 0; /* Square edges on mobile feel more modern/full-screen */
+    margin-bottom: 10px;
+    border-left: none;
+    border-right: none;
+  }
+
+  #options {
+    gap: 1rem;
+    padding: 0 10px;
   }
 
   #options button {
-    font-size: 1.3rem;
-    padding: 0.6rem 1rem;
+    font-size: 1.1rem;
+    padding: 15px 20px;
   }
 }
 
@@ -245,22 +258,25 @@ button:disabled {
   /* Aligned to bottom of container */
   left: 0;
   width: 100%;
-  /* text-align: center; -- Removed to allow better spread if needed, but centering is good */
   text-align: center;
   color: #fff;
   font-family: var(--font-body), sans-serif;
-  font-size: 1.6rem;
+  font-size: clamp(1.1rem, 4vw, 1.6rem); /* Responsive font size */
   font-weight: 500;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.7);
   z-index: 20;
   pointer-events: none;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0) 100%);
-  padding: 40px 20px 20px 20px;
-  /* Top padding for gradient fade */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 0) 100%);
+  padding: 60px 20px 30px 20px;
   opacity: 0;
-  transition: opacity 0.5s ease-in-out;
+  transition: opacity 0.6s ease-in-out;
   box-sizing: border-box;
-  /* Ensure it overlays the image container */
+}
+
+@media screen and (max-width: 480px) {
+  .cinematic-text-overlay {
+    padding: 40px 15px 20px 15px;
+  }
 }
 
 .cinematic-text-overlay.visible {
@@ -335,113 +351,86 @@ button:disabled {
   overflow: hidden;
 }
 
-.image-placeholder {
-  width: 100%;
-  height: 400px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background: #1a1a1a;
-}
-
-.placeholder-text {
-  font-family: var(--font-heading), serif;
-  font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.4);
-  z-index: 2;
-  margin-top: 20px;
-}
-
-.shimmer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-/* Hide legacy elements */
-.carousel-root,
-#game-content {
-  display: none !important;
-}
-
-/* FIX #34: Image Placeholder & Shimmer Effect */
+/* Unified Image Placeholder & Shimmer Effect */
 .image-placeholder {
   position: relative;
   width: 100%;
   height: 450px;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  background: linear-gradient(135deg, #111 0%, #222 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 15px;
+  border-radius: 12px;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .shimmer-effect {
   position: absolute;
   top: 0;
   left: -100%;
-  width: 100%;
+  width: 200%;
   height: 100%;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.03) 50%,
     transparent 100%
   );
-  animation: shimmer 2s infinite;
+  animation: shimmer-animation 2s infinite linear;
 }
 
-@keyframes shimmer {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 100%;
-  }
+@keyframes shimmer-animation {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(50%); }
 }
 
-.image-loading-text {
+.placeholder-text, .image-loading-text {
   position: relative;
   z-index: 2;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 1.2rem;
-  font-family: var(--font-body);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.1rem;
+  font-family: var(--font-heading), serif;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   margin: 0;
-  animation: fadeIn 1s ease-in-out infinite alternate;
+  letter-spacing: 0.1rem;
 }
 
 @media screen and (max-width: 480px) {
   .image-placeholder {
-    height: 300px;
+    height: 350px;
   }
   
-  .image-loading-text {
-    font-size: 1rem;
+  .placeholder-text, .image-loading-text {
+    font-size: 0.9rem;
   }
+}
+
+.spinner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  font-family: var(--font-heading), 'IM Fell English', serif;
+  font-size: 2.5rem;
+  text-align: center;
+  background-image: var(--button-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: pulse-loading 2s ease-in-out infinite;
+}
+
+@keyframes pulse-loading {
+  0%, 100% { opacity: 0.5; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 /* === #131: Options Loading Skeleton === */
