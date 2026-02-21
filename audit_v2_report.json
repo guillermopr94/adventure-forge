@@ -1,0 +1,124 @@
+{
+  "audit_version": "v2-deep",
+  "date": "2026-02-19T11:05:00+01:00",
+  "url": "https://adventure-forge.vercel.app",
+  "device": "iPhone 13 (375x812) + Desktop (1440x900)",
+  "network": "Slow 3G (300kbps/500ms latency)",
+  "total_issues": 10,
+  "issues": [
+    {
+      "context": "Main Menu",
+      "element": "Iniciar sesión con Google",
+      "size": "225x40px",
+      "issue": "BELOW 44px"
+    },
+    {
+      "context": "Main Menu",
+      "element": "[icon/no-text]",
+      "size": "0x0px",
+      "issue": "BELOW 44px"
+    },
+    {
+      "context": "Adventure Selection",
+      "element": "Iniciar sesión con Google",
+      "size": "225x40px",
+      "issue": "BELOW 44px"
+    },
+    {
+      "context": "Adventure Selection",
+      "element": "[icon/no-text]",
+      "size": "0x0px",
+      "issue": "BELOW 44px"
+    },
+    {
+      "id": "CONSOLE-000",
+      "severity": "P2",
+      "type": "BUG",
+      "title": "Failed to load resource: the server responded with a status of 403 ()",
+      "context": "Browser Console",
+      "screen": "Runtime"
+    },
+    {
+      "id": "CONSOLE-001",
+      "severity": "P2",
+      "type": "BUG",
+      "title": "Failed to load resource: the server responded with a status of 403 ()",
+      "context": "Browser Console",
+      "screen": "Runtime"
+    },
+    {
+      "id": "CONSOLE-002",
+      "severity": "P2",
+      "type": "BUG",
+      "title": "[GSI_LOGGER]: The given origin is not allowed for the given client ID.",
+      "context": "Browser Console",
+      "screen": "Runtime"
+    },
+    {
+      "id": "CONSOLE-003",
+      "severity": "P2",
+      "type": "BUG",
+      "title": "[GSI_LOGGER]: The given origin is not allowed for the given client ID.",
+      "context": "Browser Console",
+      "screen": "Runtime"
+    },
+    {
+      "id": "CONSOLE-004",
+      "severity": "P2",
+      "type": "BUG",
+      "title": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "context": "Browser Console",
+      "screen": "Runtime"
+    },
+    {
+      "id": "UX-CD-001",
+      "severity": "P2",
+      "type": "UX",
+      "title": "Click depth to gameplay: 4 steps",
+      "detail": "User needs 4 interactions to reach active gameplay. Recommended: ≤3 for mobile.",
+      "screen": "Full Flow"
+    }
+  ],
+  "console_errors": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "[GSI_LOGGER]: The given origin is not allowed for the given client ID."
+    },
+    {
+      "type": "error",
+      "text": "[GSI_LOGGER]: The given origin is not allowed for the given client ID."
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "type": "warning",
+      "text": "[Resilience] Stream Connection failed (attempt 1/3). Retrying in 1000ms... Error: Failed to fetch"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "type": "warning",
+      "text": "[Resilience] Stream Connection failed (attempt 2/3). Retrying in 2000ms... Error: Failed to fetch"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "type": "error",
+      "text": "Stream Fatal Error: TypeError: Failed to fetch\n    at kt.retries (https://adventure-forge.vercel.app/static/js/main.31e8e4a3.js:2:214683)\n    at kt (https://adventure-forge.vercel.app/static/js/main.31e8e4a3.js:2:185260)\n    at async https://adventure-forge.vercel.app/static/js/main.31e8e4a3.js:2:214649\n    at async Re (https://adventure-forge.vercel.app/static/js/main.31e8e4a3.js:2:216851)"
+    }
+  ]
+}

@@ -30,7 +30,7 @@
 **Impact:** Gameplay loop breakage; users see placeholder options instead of AI choices.  
 **Acceptance Criteria:**
 - ✅ **FE #121**: Implement Atomic SSE Message Reassembly (prevents JSON corruption).
-- **#93**: Reactive Option State Subscription in Game View.
+- **#93**: Reactive Option State Subscription in Game View. [BREAKDOWN DONE: #130, #131]
 - **#92**: Atomic Stream Event Handling & JSON Robustness. [ANALYSIS DONE: #122]
 - **Goal**: Option buttons update immediately with AI content, no placeholders.
 
@@ -39,7 +39,7 @@
 ### 2. [P0] [BUG] Translation Keys Leak (Issue #108, #119)
 **Impact:** UI shows raw i18n keys (e.g., `game.loading`) in production.  
 **Acceptance Criteria:**
-- **#119**: Ensure i18n Resilience & Fallback Support.
+- **#119**: Ensure i18n Resilience & Fallback Support. [BREAKDOWN DONE: #127, #128, #129]
 - **#108**: Fix raw keys leaking in production build.
 - **Goal**: No raw translation keys in the production UI.
 
@@ -57,7 +57,7 @@
 ### 4. [P0] [UX] Auth Error Handling in Stream (Issue #96, #104, #105, #120)
 **Impact:** User frustration when session expires mid-story or starting unlogged.  
 **Acceptance Criteria:**
-- **#120**: Add 'Retry' & 'Return to Menu' to Session Expired Modal.
+- **#120**: Add 'Retry' & 'Return to Menu' to Session Expired Modal. [BREAKDOWN DONE: #124, #125, #126]
 - **#104**: Detection of 401/Unauthorized in `useGameStream`.
 - **#105**: User-friendly "Session Expired" modal in Game View.
 - **Goal**: Prevent "black hole" states on auth expiration.
