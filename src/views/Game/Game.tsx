@@ -18,6 +18,7 @@ import { getAdventureType, AdventureGenre } from "../../common/resources/availab
 import { AudioGenerator } from "../../common/services/ai/AudioGenerator";
 import { useTheme } from "../../common/theme/ThemeContext";
 import Typewriter from "./components/Typewriter";
+import StreamErrorState from "./components/StreamErrorState";
 
 interface GameProps {
   userToken: string; // Gemini API Key
@@ -190,7 +191,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     audioGenerator,
   );
 
-  const { startStream, isStreaming: isStreamProcessing } = useGameStream(userToken, authToken, pollinationsToken, openaiKey);
+  const { startStream, isStreaming: isStreamProcessing, streamError } = useGameStream(userToken, authToken, pollinationsToken, openaiKey);
 
   // --- Helper Functions ---
   function toggleOptions(show: boolean) {
@@ -227,64 +228,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
       selectedVoice?.name || 'alloy',
       genreKey,
       language,
-      (event) => {
-        if (event.type === 'text_structure') {
-          if (event.paragraphs) {
-            const newSegments = event.paragraphs.map(p => ({ text: p, image: undefined }));
-            setCinematicSegments(newSegments);
-            setCurrentSegmentIndex(0);
-            currentSentenceIndexRef.current = 0;
-            
-            // #130: Immediately update options from stream event (no placeholders)
-            if (event.options && event.options.length > 0) {
-              updateOptionButtons(event.options);
-              // #131: Options data received, clear loading state
-              setIsOptionsLoading(false);
-            }
-
-            const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
-            setGameHistory(prev => {
-              const last = prev[prev.length - 1];
-              if (last && last.role === 'model') {
-                return [...prev.slice(0, -1), { role: 'model', parts: [{ text: fullText }] }];
-              }
-              return [...prev, { role: 'model', parts: [{ text: fullText }] }];
-            });
-
-            // If we have text but no image yet, we might still want to wait a bit 
-            // for the first image to avoid the "ghosting" effect Guillermo mentioned.
-            // However, to keep it snappy, we'll allow text to start if it takes too long.
-            setTimeout(() => setIsInitialTurnLoading(false), 2000);
-          }
-        }
-        else if (event.type === 'image') {
-          if (typeof event.index === 'number' && event.data) {
-            setCinematicSegments(prev => {
-              const copy = [...prev];
-              if (copy[event.index!]) copy[event.index!].image = event.data;
-              return copy;
-            });
-            const img = new Image();
-            img.src = event.data;
-            if (event.index === currentSegmentIndex) {
-              setCurrentImage(event.data);
-              setIsImageMissing(false);
-              // First image arrived! Clear the initial loading screen
-              if (event.index === 0) setIsInitialTurnLoading(false);
-            }
-          }
-        }
-        else if (event.type === 'audio') {
-          if (event.text && event.data) {
-            cacheAudio(event.text, event.data);
-          }
-        }
-        else if (event.type === 'error') {
-          toast.error(`Stream Error: ${event.error}`);
-          setIsProcessing(false);
-          setIsOptionsLoading(false);
-        }
-      },
+      handleStreamEvent,
       savedGameState?._id
     );
   }
@@ -402,60 +346,7 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
       selectedVoice?.name || 'alloy',
       genreKey,
       language,
-      (event) => {
-        if (event.type === 'text_structure') {
-          if (event.paragraphs) {
-            const newSegments = event.paragraphs.map(p => ({ text: p, image: undefined }));
-            setCinematicSegments(newSegments);
-            setCurrentSegmentIndex(0);
-            currentSentenceIndexRef.current = 0;
-            
-            // #130: Update options immediately from stream event
-            if (event.options && event.options.length > 0) {
-              updateOptionButtons(event.options);
-              // #131: Options data received, clear loading state
-              setIsOptionsLoading(false);
-            }
-
-            const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
-            setGameHistory(prev => {
-              const last = prev[prev.length - 1];
-              if (last && last.role === 'model') {
-                return [...prev.slice(0, -1), { role: 'model', parts: [{ text: fullText }] }];
-              }
-              return [...prev, { role: 'model', parts: [{ text: fullText }] }];
-            });
-
-            // If we have text but no image yet, wait a bit
-            setTimeout(() => setIsInitialTurnLoading(false), 2000);
-          }
-        }
-        else if (event.type === 'image') {
-          if (typeof event.index === 'number' && event.data) {
-            setCinematicSegments(prev => {
-              const copy = [...prev];
-              if (copy[event.index!]) copy[event.index!].image = event.data;
-              return copy;
-            });
-            const img = new Image();
-            img.src = event.data;
-            if (event.index === currentSegmentIndex) {
-              setCurrentImage(event.data);
-              setIsImageMissing(false);
-              // First image arrived! Clear the initial loading screen
-              if (event.index === 0) setIsInitialTurnLoading(false);
-            }
-          }
-        }
-        else if (event.type === 'audio') {
-          if (event.text && event.data) cacheAudio(event.text, event.data);
-        }
-        else if (event.type === 'error') {
-          toast.error(`Stream Error: ${event.error}`);
-          setIsProcessing(false);
-          setIsOptionsLoading(false);
-        }
-      },
+      handleStreamEvent,
       savedGameState?._id
     );
   }
@@ -492,13 +383,110 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
     } catch (e) { toast.error("Save failed", { id: toastId }); }
   }
 
+  const handleRetry = () => {
+    if (gameHistory.length === 0) {
+      startGame();
+    } else {
+      const lastUserMessage = [...gameHistory].reverse().find(m => m.role === 'user');
+      if (lastUserMessage) {
+        // Simple logic: if the last message in history is from user, we re-trigger the stream
+        // but we need to find the choice index if it was a choice turn.
+        // For now, re-triggering the choice flow is complex without refactoring,
+        // so we'll just re-run the start stream with the prompt if available.
+        // A better way is to track the "last attempt" parameters.
+        const lastPrompt = lastUserMessage.parts[0].text;
+        const historyMinusLast = gameHistory.slice(0, -1);
+        setGameHistory(historyMinusLast); // startStream will re-add it
+        
+        // If it looks like a choice, we use sendChoice logic conceptually
+        if (lastPrompt.includes("I choose option")) {
+            const match = lastPrompt.match(/I choose option (\d+)/);
+            if (match) {
+                sendChoice(parseInt(match[1]));
+                return;
+            }
+        }
+        
+        // Fallback for intro or unknown
+        startStream(
+            lastPrompt,
+            historyMinusLast,
+            selectedVoice?.name || 'alloy',
+            genreKey,
+            language,
+            handleStreamEvent,
+            savedGameState?._id
+        );
+      } else {
+        startGame();
+      }
+    }
+  };
+
+  const handleStreamEvent = (event: any) => {
+    if (event.type === 'text_structure') {
+      if (event.paragraphs) {
+        const newSegments = event.paragraphs.map((p: string) => ({ text: p, image: undefined }));
+        setCinematicSegments(newSegments);
+        setCurrentSegmentIndex(0);
+        currentSentenceIndexRef.current = 0;
+        
+        if (event.options && event.options.length > 0) {
+          updateOptionButtons(event.options);
+          setIsOptionsLoading(false);
+        }
+
+        const fullText = event.paragraphs.join('\n\n') + "\n\nOptions: " + (event.options?.join(', ') || '');
+        setGameHistory(prev => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === 'model') {
+            return [...prev.slice(0, -1), { role: 'model', parts: [{ text: fullText }] }];
+          }
+          return [...prev, { role: 'model', parts: [{ text: fullText }] }];
+        });
+
+        setTimeout(() => setIsInitialTurnLoading(false), 2000);
+      }
+    }
+    else if (event.type === 'image') {
+      if (typeof event.index === 'number' && event.data) {
+        setCinematicSegments(prev => {
+          const copy = [...prev];
+          if (copy[event.index!]) copy[event.index!].image = event.data;
+          return copy;
+        });
+        const img = new Image();
+        img.src = event.data;
+        if (event.index === currentSegmentIndex) {
+          setCurrentImage(event.data);
+          setIsImageMissing(false);
+          if (event.index === 0) setIsInitialTurnLoading(false);
+        }
+      }
+    }
+    else if (event.type === 'audio') {
+      if (event.text && event.data) cacheAudio(event.text, event.data);
+    }
+    else if (event.type === 'error') {
+      toast.error(`Stream Error: ${event.error}`);
+      setIsProcessing(false);
+      setIsOptionsLoading(false);
+    }
+  };
+
 
   return (
     <div className={`game-container`}>
       <Toaster position="top-right" />
       <BackgroundMusic audioFile={audioFile} />
 
-      {isInitialTurnLoading ? (
+      {streamError ? (
+        <StreamErrorState 
+          errorMessage={streamError} 
+          onRetry={handleRetry} 
+          onBack={handleExit} 
+        />
+      ) : isInitialTurnLoading ? (
         <div className="spinner">
           <p>{t('game_loading') || "Forging your destiny..."}</p>
         </div>
