@@ -19,6 +19,7 @@ import { AudioGenerator } from "../../common/services/ai/AudioGenerator";
 import { useTheme } from "../../common/theme/ThemeContext";
 import Typewriter from "./components/Typewriter";
 import StreamErrorState from "./components/StreamErrorState";
+import { GameImage } from "./components/GameImage";
 
 interface GameProps {
   userToken: string; // Gemini API Key
@@ -513,23 +514,14 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
             }}
             style={{ cursor: (!isProcessing && !areOptionsVisible) ? 'pointer' : 'default' }}
           >
-            {currentImage && !imageError ? (
-              <img 
-                src={currentImage} 
-                alt="Scene" 
-                className="game-scene-image" 
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <div className="image-placeholder">
-                <div className="shimmer-effect"></div>
-                <p className="placeholder-text">
-                  {imageError 
-                    ? (t('image_error') || "Image failed to load") 
-                    : (t('visualizing_scene') || "Visualizing scene...")}
-                </p>
-              </div>
-            )}
+            <GameImage 
+              src={currentImage} 
+              alt="Scene" 
+              onRetry={() => {
+                // Image retry logic is handled inside GameImage
+                console.log("Retrying image load...");
+              }}
+            />
             
             <div className={`cinematic-text-overlay ${overlayVisible ? 'visible' : ''}`}>
               <p>
