@@ -5,6 +5,9 @@ test.describe('Adventure Forge Critical Flows', () => {
   const API_URL = 'https://adventure-forge-api.onrender.com';
 
   test('UI and API Health Check', async ({ page, request }) => {
+    // Increase timeout to account for Render.com cold starts
+    test.setTimeout(60000);
+    
     // 1. Check Frontend
     const response = await page.goto(BASE_URL);
     expect(response?.status()).toBe(200);
@@ -13,7 +16,7 @@ test.describe('Adventure Forge Critical Flows', () => {
     await expect(page.getByTestId('new-adventure-btn')).toBeVisible({ timeout: 15000 });
 
     // 2. Check Backend API Health (Note: quota-stats might require auth in some versions, but we check if it responds)
-    const apiHealth = await request.get(`${API_URL}/ai/quota-stats`);
+    const apiHealth = await request.get(`${API_URL}/ai/quota-stats`, { timeout: 45000 });
     // Accepting 200 or 401 (auth required) but not 404/500
     expect([200, 401]).toContain(apiHealth.status());
   });
