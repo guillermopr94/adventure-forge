@@ -468,9 +468,11 @@ const Game: React.FC<GameProps> = ({ userToken, authToken, openaiKey, gameType, 
       if (event.text && event.data) cacheAudio(event.text, event.data);
     }
     else if (event.type === 'error') {
-      toast.error(`Stream Error: ${event.error}`);
+      const errorMsg = event.error || event.message || "An unknown stream error occurred";
+      toast.error(`Stream Error: ${errorMsg}`);
       setIsProcessing(false);
       setIsOptionsLoading(false);
+      setIsInitialTurnLoading(false);
     }
   };
 

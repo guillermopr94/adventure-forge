@@ -63,6 +63,19 @@ export const useGameStream = (
                 headers['Authorization'] = `Bearer ${authToken}`;
             }
 
+            // Set a timeout to abort the stream if it takes too long to start or respond
+            const timeoutId = setTimeout(() => {
+                if (abortControllerRef.current) {
+                    console.warn("Stream timed out after 45 seconds");
+                    abortControllerRef.current.abort();
+                    // We throw a specific error to catch it below
+                    const timeoutError = new Error("TIMEOUT_ERROR");
+                    timeoutError.name = "TimeoutError";
+                    setStreamError("Adventure generation timed out. Please try again.");
+                    if (onEventRef.current) onEventRef.current({ type: 'error', error: "Adventure generation timed out. Please try again." });
+                }
+            }, 45000); // 45 seconds timeout
+
             const response = await withRetry(async () => {
                 const res = await fetch(`${config.apiUrl}/game/stream`, {
                     method: 'POST',
@@ -80,6 +93,9 @@ export const useGameStream = (
                 }
                 return res;
             }, { retries: 3, baseDelay: 1000, name: 'Stream Connection' });
+
+            // Clear timeout once we start receiving the body
+            clearTimeout(timeoutId);
 
             if (!response.body) {
                 throw new Error("Stream body is missing");
@@ -102,8 +118,8 @@ export const useGameStream = (
             }
 
         } catch (e: any) {
-            if (e.name === 'AbortError') {
-                console.log("Stream aborted");
+            if (e.name === 'AbortError' || e.name === 'TimeoutError') {
+                console.log("Stream aborted or timed out");
                 return;
             }
             console.error("Stream Fatal Error:", e);
