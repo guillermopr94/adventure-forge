@@ -1,37 +1,37 @@
 # Project State
 
-*Auto-updated by AEP Protocol*  
-*Last updated: 2026-02-22 05:33:00*
+*Auto-updated by PR Manager Protocol*  
+*Last updated: 2026-02-22 05:49:00*
 
 ---
 
 ## Last Commit
 
-- **Hash:** 1d3d3ef
-- **Message:** feat(game): implement GameImage component with timeout and retry (#169)
+- **Hash:** 84d0b32
+- **Message:** fix(e2e): increase timeout for API health check to handle Render cold starts
 - **Branch:** main
 - **Author:** Guillermo Pérez Ruiz
-- **When:** 2026-02-22 05:32:51 +0100
-- **Files changed:** 3
+- **When:** 2026-02-22 05:49:11 +0100
+- **Files changed:** 1
 
 **Changed files:**
 ```
-src/views/Game/components/GameImage/GameImage.css
-src/views/Game/components/GameImage/GameImage.tsx
-src/views/Game/components/GameImage/index.ts
+tests/e2e/stability-audit.spec.ts
 ```
 
 ## Recent Changes
 
+- 84d0b32: fix(e2e): increase timeout for API health check to handle Render cold starts
+- bdaf2dc: chore: update PROJECT_STATE after #169 implementation [skip ci]
 - 1d3d3ef: feat(game): implement GameImage component with timeout and retry (#169)
 - b6cfaf4: fix(game): add stream timeout and improve error handling in Game view
-- 7d30e58: docs: add UX & Aesthetics Premium Audit report
-- 013c18a: chore: sync PROJECT_STATE after PR Manager execution [skip ci]
-- 892fc6c: feat(stream): integrate error handling and abort support in useGameStream (#147)
+- dc8fe43: chore: sync PROJECT_STATE after PR Manager execution [skip ci]
 
 ## Current Focus
 
-**Image Loading Resilience** — Implemented dedicated GameImage component with timeout logic (15s default), retry functionality, and cross-fade transitions. Addresses #169 (GameImage component) and prepares for #170 (Game.tsx integration). Stability improvements continue with focus on eliminating infinite loading states for images.
+**E2E Test Stability** — Fixed timeout issues in API health checks to account for Render.com cold starts. Increased test timeout from 30s to 60s and API request timeout to 45s. This prevents false negatives in CI/CD pipeline due to backend spin-up delays.
+
+**Image Loading Resilience** — Implemented dedicated GameImage component with timeout logic (15s default), retry functionality, and cross-fade transitions. Addresses #169 (GameImage component) and prepares for #170 (Game.tsx integration).
 
 ## Suggested Next Steps
 
